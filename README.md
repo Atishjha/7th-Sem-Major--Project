@@ -20,9 +20,9 @@ Currently complete:
 - [x] Phase 1 — Project setup
 - [x] Phase 2 — Database + authentication
 - [x] Phase 3 — Dashboard (this phase)
-- [ ] Phase 3 — Dashboard
-- [ ] Phase 4 — Event simulator
-- [ ] Phase 5 — Rule detection
+- [x] Phase 3 — Dashboard
+- [x] Phase 4 — Event simulator
+- [x] Phase 5 — Rule detection
 - [ ] Phase 6 — ML anomaly detection
 - [ ] Phase 7 — Alert correlation
 - [ ] Phase 8 — Risk engine
