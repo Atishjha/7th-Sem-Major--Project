@@ -1,0 +1,28 @@
+# Env
+.env
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+*.egg-info/
+
+# Node
+node_modules/
+dist/
+.vite/
+
+# ML artifacts
+ml/models/*.pkl
+ml/models/*.joblib
+
+# Data (raw/processed can be large or sensitive-looking; keep demo only)
+data/raw/*
+data/processed/*
+!data/raw/.gitkeep
+!data/processed/.gitkeep
+
+# OS / editor
+.DS_Store
+.vscode/
+.idea/
