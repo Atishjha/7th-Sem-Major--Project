@@ -1,6 +1,8 @@
 import type { LoginResponse, User } from "@/types/auth";
 import type { DashboardResponse } from "@/types/dashboard";
-import type { SocEvent, SimulatorStatus, ScenarioName } from "@/types/event";
+import type { SocEvent, SimulatorStatus, ScenarioName, Alert, DetectionRule } from "@/types/event";
+import type { MLStatus, MLPrediction, MLTrainingRun } from "@/types/ml";
+import type { Incident, IncidentDetail } from "@/types/incident";
 
 const API_BASE = "/api";
 const TOKEN_KEY = "soc_token";
@@ -88,3 +90,51 @@ export const startSimulator = (scenario: ScenarioName) =>
 
 export const stopSimulator = () =>
   request<SimulatorStatus>("/simulator/stop", { method: "POST" });
+
+export const getAlerts = (params: { limit?: number; rule_key?: string; severity?: string } = {}) => {
+  const qs = new URLSearchParams();
+  if (params.limit) qs.set("limit", String(params.limit));
+  if (params.rule_key) qs.set("rule_key", params.rule_key);
+  if (params.severity) qs.set("severity", params.severity);
+  const suffix = qs.toString() ? `?${qs.toString()}` : "";
+  return request<Alert[]>(`/alerts${suffix}`);
+};
+
+export const getRules = () => request<DetectionRule[]>("/rules");
+
+export const updateRule = (
+  rule_key: string,
+  updates: { enabled?: boolean; config?: Record<string, number | string> }
+) =>
+  request<DetectionRule>("/rules", {
+    method: "POST",
+    body: JSON.stringify({ rule_key, ...updates }),
+  });
+
+export const getMlStatus = () => request<MLStatus>("/ml/status");
+
+export const trainMlModel = (contamination = 0.05, window_minutes = 5) =>
+  request<MLTrainingRun>("/ml/train", {
+    method: "POST",
+    body: JSON.stringify({ contamination, window_minutes }),
+  });
+
+export const getMlPredictions = (params: { limit?: number; anomalous_only?: boolean } = {}) => {
+  const qs = new URLSearchParams();
+  if (params.limit) qs.set("limit", String(params.limit));
+  if (params.anomalous_only) qs.set("anomalous_only", "true");
+  const suffix = qs.toString() ? `?${qs.toString()}` : "";
+  return request<MLPrediction[]>(`/ml/predictions${suffix}`);
+};
+
+export const getIncidents = (params: { limit?: number; status?: string; severity?: string } = {}) => {
+  const qs = new URLSearchParams();
+  if (params.limit) qs.set("limit", String(params.limit));
+  if (params.status) qs.set("status", params.status);
+  if (params.severity) qs.set("severity", params.severity);
+  const suffix = qs.toString() ? `?${qs.toString()}` : "";
+  return request<Incident[]>(`/incidents${suffix}`);
+};
+
+export const getIncident = (incidentId: string) =>
+  request<IncidentDetail>(`/incidents/${incidentId}`);

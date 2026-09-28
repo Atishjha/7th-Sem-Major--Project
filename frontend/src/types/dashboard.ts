@@ -32,10 +32,21 @@ export interface LiveEvent {
   message: string;
 }
 
+import type { Severity } from "@/types/event";
+
+export interface IncidentSummary {
+  incident_id: string;
+  title: string;
+  severity: Severity;
+  alert_count: number;
+  last_seen: string;
+}
+
 export interface DashboardResponse {
   kpis: DashboardKpis;
   charts: DashboardCharts;
   live_events: LiveEvent[];
+  recent_incidents: IncidentSummary[];
   data_status: "no_data" | "live";
   message: string;
 }

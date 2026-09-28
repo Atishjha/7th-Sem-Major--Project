@@ -11,7 +11,7 @@ event so the Alerts UI never needs a join for the common case.
 from datetime import datetime, timezone
 from typing import Any
 
-from sqlalchemy import String, DateTime, JSON
+from sqlalchemy import String, DateTime, JSON, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database.base import Base
@@ -37,6 +37,10 @@ class Alert(Base):
     triggering_event_ids: Mapped[list[int]] = mapped_column(JSON, default=list)
     alert_metadata: Mapped[dict[str, Any]] = mapped_column(
         JSON, default=dict, name="metadata"
+    )
+
+    incident_id: Mapped[int | None] = mapped_column(
+        ForeignKey("incidents.id"), nullable=True, index=True
     )
 
     detected_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)

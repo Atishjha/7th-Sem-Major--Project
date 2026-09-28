@@ -17,9 +17,12 @@ This module only *describes* telemetry that a defensive analyst would
 investigate. It performs no scanning, no execution, and no network
 activity of any kind — everything here is just Python data.
 """
+
 import random
 import uuid
+
 from app.models.common import Severity
+
 USERS = ["demo_user", "demo_admin", "j.doe.demo", "a.patel.demo"]
 HOSTS = ["WIN-CLIENT-01", "WIN-CLIENT-02", "WIN-SRV-DB01", "WIN-SRV-WEB01"]
 INTERNAL_IPS = ["192.168.56.10", "192.168.56.11", "192.168.56.20", "10.10.0.15"]
@@ -31,6 +34,8 @@ SYNTHETIC_LOCATIONS = [
     "Manila, PH (synthetic)",
 ]
 HOME_LOCATION = "Bhubaneswar, IN (synthetic)"
+
+
 def _evt(
     source: str,
     event_type: str,
@@ -58,6 +63,8 @@ def _evt(
         "message": message,
         "event_metadata": metadata or {},
     }
+
+
 def scenario_brute_force() -> list[tuple[float, dict]]:
     user = random.choice(USERS)
     host = random.choice(HOSTS)
@@ -106,6 +113,8 @@ def scenario_brute_force() -> list[tuple[float, dict]]:
         ),
     ))
     return events
+
+
 def scenario_powershell() -> list[tuple[float, dict]]:
     host = random.choice(HOSTS)
     user = random.choice(USERS)
@@ -152,6 +161,8 @@ def scenario_powershell() -> list[tuple[float, dict]]:
         ),
     ))
     return events
+
+
 def scenario_dns_anomaly() -> list[tuple[float, dict]]:
     host = random.choice(HOSTS)
     internal_ip = random.choice(INTERNAL_IPS)
@@ -169,6 +180,7 @@ def scenario_dns_anomaly() -> list[tuple[float, dict]]:
                 metadata={"domain": f"{subdomain}.example-test.invalid"},
             ),
         ))
+
     events.append((
         1.0,
         _evt(
@@ -188,6 +200,8 @@ def scenario_dns_anomaly() -> list[tuple[float, dict]]:
         ),
     ))
     return events
+
+
 def scenario_network_anomaly() -> list[tuple[float, dict]]:
     host = random.choice(HOSTS)
     internal_ip = random.choice(INTERNAL_IPS)
@@ -236,16 +250,23 @@ def scenario_network_anomaly() -> list[tuple[float, dict]]:
         ),
     ))
     return events
+
+
 def scenario_multi_stage() -> list[tuple[float, dict]]:
     """The flagship demo: brute force -> PowerShell -> network anomaly,
     all tied to the same user/host so later phases can correlate them
     into a single incident."""
-    user = random.choice(USERS)
-    host = random.choice(HOSTS)
-    attacker_ip = random.choice(SUSPICIOUS_EXTERNAL_IPS)
+    # Fresh synthetic entities every run (RFC 5737 IP, .demo user, made-up
+    # host) so the flagship demo always opens its own clean incident
+    # instead of merging into one left over from earlier scenarios that
+    # drew from the small shared pools above. Rehearsing it twice gives
+    # two separate incidents.
+    user = f"{random.choice(['m.rossi', 'k.tanaka', 's.okafor', 'l.novak', 't.silva'])}{random.randint(10, 99)}.demo"
+    host = f"WIN-CLIENT-{random.randint(10, 99)}"
+    attacker_ip = f"203.0.113.{random.randint(100, 250)}"
     events: list[tuple[float, dict]] = []
 
-    fail_count = 4
+    fail_count = 5  # matches the brute_force rule's default threshold
     for i in range(fail_count):
         events.append((
             0.8,
@@ -292,7 +313,9 @@ def scenario_multi_stage() -> list[tuple[float, dict]]:
             "Suspicious PowerShell command pattern detected",
             source_ip=attacker_ip, username=user, hostname=host,
             metadata={
+                "process": "powershell.exe",
                 "command_line": "powershell.exe -NoProfile -WindowStyle Hidden -Command <SYNTHETIC_PLACEHOLDER>",
+                "pattern_matched": "hidden_window_flag",
             },
         ),
     ))
@@ -307,6 +330,8 @@ def scenario_multi_stage() -> list[tuple[float, dict]]:
         ),
     ))
     return events
+
+
 SCENARIOS = {
     "brute_force": scenario_brute_force,
     "powershell": scenario_powershell,

@@ -1,4 +1,6 @@
 from pydantic import BaseModel
+
+
 class DashboardKpis(BaseModel):
     active_incidents: int
     critical_alerts: int
@@ -8,25 +10,43 @@ class DashboardKpis(BaseModel):
     avg_response_time_seconds: float | None
     systems_at_risk: int
 
+
 class TimeSeriesPoint(BaseModel):
     label: str
     value: float
+
+
 class CategoryCount(BaseModel):
     category: str
     count: int
+
+
 class DashboardCharts(BaseModel):
     events_over_time: list[TimeSeriesPoint]
     severity_distribution: list[CategoryCount]
     detection_type_distribution: list[CategoryCount]
     attack_category_distribution: list[CategoryCount]
     ml_anomalies_over_time: list[TimeSeriesPoint]
+
+
 class LiveEvent(BaseModel):
     timestamp: str
     source: str
     message: str
+
+
+class IncidentSummary(BaseModel):
+    incident_id: str
+    title: str
+    severity: str
+    alert_count: int
+    last_seen: str
+
+
 class DashboardResponse(BaseModel):
     kpis: DashboardKpis
     charts: DashboardCharts
     live_events: list[LiveEvent]
+    recent_incidents: list[IncidentSummary]
     data_status: str  # "no_data" | "live"
     message: str

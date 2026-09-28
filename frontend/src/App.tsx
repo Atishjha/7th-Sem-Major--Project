@@ -5,6 +5,10 @@ import AppShell from "@/layouts/AppShell";
 import Login from "@/pages/Login";
 import Dashboard from "@/pages/Dashboard";
 import EventMonitor from "@/pages/EventMonitor";
+import DetectionEngine from "@/pages/DetectionEngine";
+import MlAnomalyDetection from "@/pages/MlAnomalyDetection";
+import Alerts from "@/pages/Alerts";
+import Incidents from "@/pages/Incidents";
 import Demo from "@/pages/Demo";
 import ComingSoon from "@/pages/ComingSoon";
 
@@ -19,42 +23,10 @@ export default function App() {
             <Route element={<AppShell />}>
               <Route index element={<Dashboard />} />
               <Route path="/events" element={<EventMonitor />} />
-              <Route
-                path="/detection"
-                element={
-                  <ComingSoon
-                    title="Detection Engine"
-                    phaseNote="rule-based detection lands in Phase 5"
-                  />
-                }
-              />
-              <Route
-                path="/ml"
-                element={
-                  <ComingSoon
-                    title="ML Anomaly Detection"
-                    phaseNote="the Isolation Forest model lands in Phase 6"
-                  />
-                }
-              />
-              <Route
-                path="/alerts"
-                element={
-                  <ComingSoon
-                    title="Alerts"
-                    phaseNote="it lands alongside detection in Phase 5"
-                  />
-                }
-              />
-              <Route
-                path="/incidents"
-                element={
-                  <ComingSoon
-                    title="Incident Management"
-                    phaseNote="the incident page lands in Phase 9"
-                  />
-                }
-              />
+              <Route path="/detection" element={<DetectionEngine />} />
+              <Route path="/ml" element={<MlAnomalyDetection />} />
+              <Route path="/alerts" element={<Alerts />} />
+              <Route path="/incidents" element={<Incidents />} />
               <Route
                 path="/risk"
                 element={

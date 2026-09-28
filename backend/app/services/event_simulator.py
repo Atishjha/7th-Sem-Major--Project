@@ -9,12 +9,19 @@ broadcast so `GET /api/events` and the WebSocket never disagree.
 
 import asyncio
 from datetime import datetime, timedelta, timezone
+
 from app.database.session import SessionLocal
+from app.detectors.engine import run_detectors
 from app.models.event import Event
+from app.schemas.alert import AlertOut
+from app.schemas.incident import IncidentOut
+from app.services.correlation import correlate_alerts
 from app.schemas.event import EventOut
 from app.services.event_scenarios import SCENARIOS
 from app.services.ws_manager import manager
 from app.utils.ids import next_event_id
+
+
 class SimulatorRunner:
     def __init__(self) -> None:
         self._task: asyncio.Task | None = None
@@ -23,6 +30,7 @@ class SimulatorRunner:
         self.events_emitted: int = 0
         self.total_events: int | None = None
         self.started_at: datetime | None = None
+
     def status(self) -> dict:
         return {
             "running": self.running,
@@ -31,6 +39,7 @@ class SimulatorRunner:
             "total_events": self.total_events,
             "started_at": self.started_at,
         }
+
     async def start(self, scenario_key: str) -> None:
         if self.running:
             raise RuntimeError("A scenario is already running")
@@ -42,22 +51,27 @@ class SimulatorRunner:
         self.events_emitted = 0
         self.started_at = datetime.now(timezone.utc)
         self._task = asyncio.create_task(self._run(scenario_key))
+
     async def stop(self) -> None:
         if self._task and not self._task.done():
             self._task.cancel()
         self._reset()
         await manager.broadcast({"type": "status", "data": self.status()})
+
     def _reset(self) -> None:
         self.running = False
         self.scenario = None
         self.events_emitted = 0
         self.total_events = None
         self.started_at = None
+
     async def _run(self, scenario_key: str) -> None:
         generator = SCENARIOS[scenario_key]
         plan = generator()
         self.total_events = len(plan)
+
         await manager.broadcast({"type": "status", "data": self.status()})
+
         db = SessionLocal()
         try:
             clock = datetime.now(timezone.utc)
@@ -77,6 +91,17 @@ class SimulatorRunner:
 
                 payload = EventOut.model_validate(event).model_dump(mode="json")
                 await manager.broadcast({"type": "event", "data": payload})
+
+                new_alerts = run_detectors(db, event)
+                for alert in new_alerts:
+                    alert_payload = AlertOut.model_validate(alert).model_dump(mode="json")
+                    await manager.broadcast({"type": "alert", "data": alert_payload})
+
+                if new_alerts:
+                    for incident, _created in correlate_alerts(db, new_alerts):
+                        incident_payload = IncidentOut.model_validate(incident).model_dump(mode="json")
+                        await manager.broadcast({"type": "incident", "data": incident_payload})
+
                 await manager.broadcast({"type": "status", "data": self.status()})
         except asyncio.CancelledError:
             db.rollback()
@@ -85,4 +110,6 @@ class SimulatorRunner:
             db.close()
             self._reset()
             await manager.broadcast({"type": "status", "data": self.status()})
+
+
 simulator_runner = SimulatorRunner()

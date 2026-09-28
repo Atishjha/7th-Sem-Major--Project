@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import {
   AreaChart,
   Area,
@@ -60,13 +61,14 @@ function EmptyChart({ note }: { note: string }) {
 export default function Dashboard() {
   const [data, setData] = useState<DashboardResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const { connected, liveEvents, status } = useEventStream();
+  const { connected, liveEvents, liveAlerts, liveIncidents, status } = useEventStream();
 
   useEffect(() => {
     getDashboard()
       .then(setData)
       .catch((e) => setError(e.message ?? "Failed to load dashboard"));
-  }, []);
+    // re-pull KPIs and charts whenever a new alert or incident arrives over the WebSocket
+  }, [liveAlerts.length, liveIncidents.length]);
 
   if (error) {
     return (
@@ -82,7 +84,7 @@ export default function Dashboard() {
     );
   }
 
-  const { kpis, charts, live_events, message } = data;
+  const { kpis, charts, live_events, recent_incidents, message } = data;
 
   return (
     <div className="space-y-6">
@@ -252,8 +254,37 @@ export default function Dashboard() {
           )}
         </Panel>
 
-        <Panel title="Incident timeline">
-          <EmptyChart note="No incidents yet — Alert Correlation and Incident Management arrive in Phase 7–9." />
+        <Panel
+          title="Incident timeline"
+          aside={
+            <Link to="/incidents" className="text-xs text-signal hover:underline">
+              View all
+            </Link>
+          }
+        >
+          {recent_incidents.length === 0 ? (
+            <EmptyChart note="No incidents yet. Alerts that share a user, IP, or host are grouped into one incident once detections fire." />
+          ) : (
+            <div className="space-y-2.5 max-h-48 overflow-y-auto">
+              {recent_incidents.map((inc) => (
+                <div key={inc.incident_id} className="flex items-start gap-3 text-xs">
+                  <span className="font-mono text-muted whitespace-nowrap pt-0.5">
+                    {new Date(inc.last_seen).toLocaleTimeString()}
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono text-slate-400">{inc.incident_id}</span>
+                      <SeverityBadge severity={inc.severity} />
+                    </div>
+                    <div className="text-slate-200 truncate">{inc.title}</div>
+                  </div>
+                  <span className="font-mono text-muted whitespace-nowrap">
+                    {inc.alert_count} alert{inc.alert_count === 1 ? "" : "s"}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
         </Panel>
       </div>
 
