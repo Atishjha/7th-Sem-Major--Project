@@ -6,7 +6,7 @@ from app.schemas.auth import LoginRequest, TokenResponse, UserOut
 from app.security.dependencies import get_current_user
 from app.security.jwt import create_access_token
 from app.services.auth_service import authenticate_user
-from backend.app.models import user
+#from backend.app.models import user
 router = APIRouter(prefix="/auth", tags=["auth"])
 @router.post("/login", response_model=TokenResponse)
 def login(payload: LoginRequest, db: Session = Depends(get_db)):
