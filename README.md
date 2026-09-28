@@ -23,7 +23,7 @@ Currently complete:
 - [x] Phase 3 — Dashboard
 - [x] Phase 4 — Event simulator
 - [x] Phase 5 — Rule detection
-- [ ] Phase 6 — ML anomaly detection
+- [x] Phase 6 — ML anomaly detection
 - [ ] Phase 7 — Alert correlation
 - [ ] Phase 8 — Risk engine
 - [ ] Phase 9 — Incident page
