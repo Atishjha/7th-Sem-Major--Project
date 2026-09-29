@@ -17,7 +17,7 @@ DEFAULT_RULES = [
             "a short window."
         ),
         "enabled": True,
-        "config": {"failed_threshold": 5, "window_minutes": 5},
+        "config": {"failed_threshold": 5, "window_minutes": 5, "confidence": "high"},
     },
     {
         "rule_key": "suspicious_powershell",
@@ -27,7 +27,7 @@ DEFAULT_RULES = [
             "command-line pattern (e.g. hidden window, encoded command)."
         ),
         "enabled": True,
-        "config": {"flagged_process": "powershell.exe"},
+        "config": {"flagged_process": "powershell.exe", "confidence": "high"},
     },
     {
         "rule_key": "impossible_travel",
@@ -38,7 +38,7 @@ DEFAULT_RULES = [
             "change signal, not true geo-distance physics)."
         ),
         "enabled": True,
-        "config": {"window_minutes": 10},
+        "config": {"window_minutes": 10, "confidence": "medium"},
     },
     {
         "rule_key": "dns_anomaly",
@@ -48,7 +48,7 @@ DEFAULT_RULES = [
             "within a short window."
         ),
         "enabled": True,
-        "config": {"query_threshold": 6, "window_seconds": 60},
+        "config": {"query_threshold": 6, "window_seconds": 60, "confidence": "medium"},
     },
     {
         "rule_key": "abnormal_network",
@@ -62,6 +62,7 @@ DEFAULT_RULES = [
             "unique_destination_threshold": 10,
             "bytes_sent_threshold": 50_000_000,
             "bytes_sent_critical_threshold": 200_000_000,
+            "confidence": "medium",
         },
     },
 ]

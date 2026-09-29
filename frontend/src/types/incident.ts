@@ -7,7 +7,16 @@ export interface CorrelationEntry {
   reasons: string[];
 }
 
+export interface RiskFactor {
+  factor: string;
+  label: string;
+  points: number;
+  max_points: number;
+  detail: string | Record<string, unknown>;
+}
+
 export interface IncidentMetadata {
+  risk_breakdown?: RiskFactor[];
   entities?: Partial<
     Record<"usernames" | "source_ips" | "hostnames" | "destination_ips", string[]>
   >;

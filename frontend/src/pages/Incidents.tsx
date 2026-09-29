@@ -110,6 +110,7 @@ export default function Incidents() {
                   <th className="py-1.5 pr-4">Severity</th>
                   <th className="py-1.5 pr-4">Incident</th>
                   <th className="py-1.5 pr-4">Alerts</th>
+                  <th className="py-1.5 pr-4">Risk</th>
                   <th className="py-1.5 pr-4">Host / IP</th>
                   <th className="py-1.5">Status</th>
                 </tr>
@@ -134,6 +135,23 @@ export default function Incidents() {
                         </td>
                         <td className="py-1.5 pr-4 text-slate-200">{inc.title}</td>
                         <td className="py-1.5 pr-4 text-signal">{inc.alert_count}</td>
+                        <td className="py-1.5 pr-4">
+                          {inc.risk_score !== null ? (
+                            <span
+                              className={
+                                inc.risk_score >= 75
+                                  ? "text-severity-critical"
+                                  : inc.risk_score >= 50
+                                    ? "text-severity-high"
+                                    : "text-severity-medium"
+                              }
+                            >
+                              {Math.round(inc.risk_score)}/100
+                            </span>
+                          ) : (
+                            <span className="text-muted">—</span>
+                          )}
+                        </td>
                         <td className="py-1.5 pr-4 text-slate-400">
                           {inc.primary_hostname ?? "—"} / {inc.primary_source_ip ?? "—"}
                         </td>
@@ -144,7 +162,7 @@ export default function Incidents() {
 
                       {open && (
                         <tr className="border-b border-line/50">
-                          <td colSpan={7} className="bg-ink-950/60 px-4 py-4">
+                          <td colSpan={8} className="bg-ink-950/60 px-4 py-4">
                             {!detail || detail.incident_id !== inc.incident_id ? (
                               <p className="text-muted">Loading correlation trail…</p>
                             ) : (
@@ -174,6 +192,33 @@ export default function Incidents() {
                                     </span>
                                   </div>
                                 </div>
+
+                                {detail.incident_metadata.risk_breakdown && (
+                                  <div>
+                                    <div className="flex items-baseline gap-2 mb-2">
+                                      <span className="text-muted">Risk score</span>
+                                      <span className="text-slate-100 text-base">
+                                        {Math.round(detail.risk_score ?? 0)}/100
+                                      </span>
+                                    </div>
+                                    <div className="space-y-1.5">
+                                      {detail.incident_metadata.risk_breakdown.map((f) => (
+                                        <div key={f.factor} className="flex items-center gap-3">
+                                          <span className="w-40 shrink-0 text-slate-300">{f.label}</span>
+                                          <div className="flex-1 h-2 bg-ink-950 rounded-full overflow-hidden">
+                                            <div
+                                              className="h-full bg-signal"
+                                              style={{ width: `${(f.points / f.max_points) * 100}%` }}
+                                            />
+                                          </div>
+                                          <span className="w-16 text-right text-slate-200">
+                                            +{f.points}/{f.max_points}
+                                          </span>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
 
                                 <div>
                                   <div className="text-muted mb-2">

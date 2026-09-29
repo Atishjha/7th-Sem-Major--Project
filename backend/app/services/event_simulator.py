@@ -16,6 +16,7 @@ from app.models.event import Event
 from app.schemas.alert import AlertOut
 from app.schemas.incident import IncidentOut
 from app.services.correlation import correlate_alerts
+from app.services.risk_engine import recompute_and_save
 from app.schemas.event import EventOut
 from app.services.event_scenarios import SCENARIOS
 from app.services.ws_manager import manager
@@ -99,6 +100,9 @@ class SimulatorRunner:
 
                 if new_alerts:
                     for incident, _created in correlate_alerts(db, new_alerts):
+                        recompute_and_save(db, incident)
+                        db.commit()
+                        db.refresh(incident)
                         incident_payload = IncidentOut.model_validate(incident).model_dump(mode="json")
                         await manager.broadcast({"type": "incident", "data": incident_payload})
 
