@@ -3,6 +3,7 @@ from typing import Any
 from pydantic import BaseModel
 from app.models.common import Severity
 from app.schemas.alert import AlertOut
+from app.schemas.event import EventOut
 class IncidentOut(BaseModel):
     id: int
     incident_id: str
@@ -23,4 +24,4 @@ class IncidentOut(BaseModel):
         from_attributes = True
 class IncidentDetailOut(IncidentOut):
     alerts: list[AlertOut]
-    event_ids: list[int]
+    events: list[EventOut]

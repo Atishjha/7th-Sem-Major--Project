@@ -4,9 +4,11 @@ from sqlalchemy.orm import Session
 
 from app.database.session import get_db
 from app.models.alert import Alert
+from app.models.event import Event
 from app.models.incident import Incident, IncidentEvent
 from app.models.user import User
 from app.schemas.alert import AlertOut
+from app.schemas.event import EventOut
 from app.schemas.incident import IncidentDetailOut, IncidentOut
 from app.security.dependencies import get_current_user
 from app.utils.ids import parse_severity
@@ -47,16 +49,17 @@ def get_incident(
             select(Alert).where(Alert.incident_id == incident.id).order_by(Alert.detected_at)
         )
     )
-    event_ids = list(
+    events = list(
         db.scalars(
-            select(IncidentEvent.event_id)
+            select(Event)
+            .join(IncidentEvent, IncidentEvent.event_id == Event.id)
             .where(IncidentEvent.incident_id == incident.id)
-            .order_by(IncidentEvent.event_id)
+            .order_by(Event.timestamp)
         )
     )
     base = IncidentOut.model_validate(incident).model_dump()
     return IncidentDetailOut(
         **base,
         alerts=[AlertOut.model_validate(a) for a in alerts],
-        event_ids=event_ids,
+        events=[EventOut.model_validate(e) for e in events],
     )

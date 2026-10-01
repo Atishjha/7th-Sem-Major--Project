@@ -9,6 +9,7 @@ import DetectionEngine from "@/pages/DetectionEngine";
 import MlAnomalyDetection from "@/pages/MlAnomalyDetection";
 import Alerts from "@/pages/Alerts";
 import Incidents from "@/pages/Incidents";
+import IncidentDetail from "@/pages/IncidentDetail";
 import Demo from "@/pages/Demo";
 import ComingSoon from "@/pages/ComingSoon";
 
@@ -27,6 +28,7 @@ export default function App() {
               <Route path="/ml" element={<MlAnomalyDetection />} />
               <Route path="/alerts" element={<Alerts />} />
               <Route path="/incidents" element={<Incidents />} />
+              <Route path="/incidents/:incidentId" element={<IncidentDetail />} />
               <Route
                 path="/risk"
                 element={

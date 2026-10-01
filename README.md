@@ -25,7 +25,7 @@ Currently complete:
 - [x] Phase 6 — ML anomaly detection
 - [x] Phase 7 — Alert correlation
 - [x] Phase 8 — Risk engine (this phase)
-- [ ] Phase 9 — Incident page
+- [x] Phase 9 — Incident page
 - [ ] Phase 10 — AI SOC Analyst
 - [ ] Phase 11 — MITRE ATT&CK
 - [ ] Phase 12 — Response Center

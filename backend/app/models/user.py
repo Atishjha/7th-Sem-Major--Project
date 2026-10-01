@@ -18,7 +18,7 @@ class UserRole(str, enum.Enum):
 class User(Base):
     __tablename__ = "users"
     id: Mapped[str] = mapped_column(
-        String(36),primary_key=True, default=lambda: str(uuid.uuid64())
+        String(36), primary_key=True, default=lambda: str(uuid.uuid4())
     )
     username:Mapped[str] = mapped_column(String(64),unique=True, index=True)
     hashed_password: Mapped[str] = mapped_column(String(255))

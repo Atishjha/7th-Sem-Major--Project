@@ -1,4 +1,4 @@
-import type { Alert, Severity } from "@/types/event";
+import type { Alert, Severity, SocEvent } from "@/types/event";
 
 export interface CorrelationEntry {
   alert_id: string;
@@ -44,5 +44,5 @@ export interface Incident {
 
 export interface IncidentDetail extends Incident {
   alerts: Alert[];
-  event_ids: number[];
+  events: SocEvent[];
 }
