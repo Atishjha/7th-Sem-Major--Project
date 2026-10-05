@@ -7,6 +7,7 @@ import type { Investigation } from "@/types/ai";
 import type { TechniqueObservation } from "@/types/mitre";
 import type { MitreTechnique } from "@/types/ai";
 import type { ResponseAction } from "@/types/response";
+import type { AuditLogEntry } from "@/types/audit";
 
 const API_BASE = "/api";
 const TOKEN_KEY = "soc_token";
@@ -167,3 +168,15 @@ export const approveResponseAction = (responseId: string) =>
 
 export const rejectResponseAction = (responseId: string) =>
   request<ResponseAction>(`/response/${responseId}/reject`, { method: "POST" });
+
+export const getAuditLogs = (
+  params: { limit?: number; resource_type?: string; resource_id?: string; username?: string } = {}
+) => {
+  const qs = new URLSearchParams();
+  if (params.limit) qs.set("limit", String(params.limit));
+  if (params.resource_type) qs.set("resource_type", params.resource_type);
+  if (params.resource_id) qs.set("resource_id", params.resource_id);
+  if (params.username) qs.set("username", params.username);
+  const suffix = qs.toString() ? `?${qs.toString()}` : "";
+  return request<AuditLogEntry[]>(`/audit${suffix}`);
+};

@@ -12,6 +12,7 @@ import Incidents from "@/pages/Incidents";
 import IncidentDetail from "@/pages/IncidentDetail";
 import MitreAttack from "@/pages/MitreAttack";
 import ResponseCenter from "@/pages/ResponseCenter";
+import AuditLogs from "@/pages/AuditLogs";
 import Demo from "@/pages/Demo";
 import ComingSoon from "@/pages/ComingSoon";
 
@@ -60,15 +61,7 @@ export default function App() {
                 }
               />
               <Route path="/response" element={<ResponseCenter />} />
-              <Route
-                path="/audit"
-                element={
-                  <ComingSoon
-                    title="Audit Logs"
-                    phaseNote="audit logging lands in Phase 13"
-                  />
-                }
-              />
+              <Route path="/audit" element={<AuditLogs />} />
               <Route
                 path="/dataset"
                 element={

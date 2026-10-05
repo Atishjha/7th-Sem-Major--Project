@@ -13,7 +13,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import settings
-from app.api import health, auth, dashboard, events, simulator, ws, alerts, detections, rules, ml, incidents, assets, mitre, response
+from app.api import health, auth, dashboard, events, simulator, ws, alerts, detections, rules, ml, incidents, assets, mitre, response, audit
 from app.database.session import SessionLocal
 from app.detectors.engine import ensure_default_rules
 from app.services.correlation import backfill_uncorrelated_alerts
@@ -65,6 +65,7 @@ app.include_router(incidents.router, prefix=settings.API_V1_PREFIX)
 app.include_router(assets.router, prefix=settings.API_V1_PREFIX)
 app.include_router(mitre.router, prefix=settings.API_V1_PREFIX)
 app.include_router(response.router, prefix=settings.API_V1_PREFIX)
+app.include_router(audit.router, prefix=settings.API_V1_PREFIX)
 app.include_router(ws.router)  # no /api prefix — matches the frontend's /ws proxy rule
 
 

@@ -16,6 +16,7 @@ import { useAuth } from "@/hooks/useAuth";
 import * as api from "@/services/api";
 import type { Investigation, MitreTechnique } from "@/types/ai";
 import type { ResponseAction } from "@/types/response";
+import type { AuditLogEntry } from "@/types/audit";
 import { useEventStream } from "@/hooks/useEventStream";
 import { getIncident } from "@/services/api";
 import type { IncidentDetail as IncidentDetailType } from "@/types/incident";
@@ -46,6 +47,7 @@ export default function IncidentDetail() {
   const [investigateError, setInvestigateError] = useState<string | null>(null);
   const [mitre, setMitre] = useState<MitreTechnique[] | null>(null);
   const [responseActions, setResponseActions] = useState<ResponseAction[] | null>(null);
+  const [auditLogs, setAuditLogs] = useState<AuditLogEntry[] | null>(null);
   const { liveIncidents } = useEventStream();
 
   function load() {
@@ -62,6 +64,7 @@ export default function IncidentDetail() {
     api.getInvestigation(incidentId).then(setInvestigation);
     api.getIncidentMitre(incidentId).then(setMitre);
     api.getIncidentResponseActions(incidentId).then(setResponseActions);
+    api.getAuditLogs({ resource_type: "incident", resource_id: incidentId }).then(setAuditLogs);
   }, [incidentId]);
 
   async function handleInvestigate() {
@@ -318,11 +321,14 @@ export default function IncidentDetail() {
                     key={a.response_id}
                     action={a}
                     canDecide={canInvestigate}
-                    onDecided={(updated) =>
+                    onDecided={(updated) => {
                       setResponseActions((prev) =>
                         prev!.map((x) => (x.response_id === updated.response_id ? updated : x))
-                      )
-                    }
+                      );
+                      if (incidentId) {
+                        api.getAuditLogs({ resource_type: "incident", resource_id: incidentId }).then(setAuditLogs);
+                      }
+                    }}
                   />
                 ))}
               </div>
@@ -330,7 +336,26 @@ export default function IncidentDetail() {
           </Panel>
         </TabsContent>
         <TabsContent value="audit">
-          <NotBuiltYet phase="audit logging lands in Phase 13" />
+          <Panel title="Audit trail for this incident">
+            {auditLogs === null ? (
+              <p className="text-sm text-muted font-mono">Loading…</p>
+            ) : auditLogs.length === 0 ? (
+              <p className="text-sm text-muted font-mono">No audited actions on this incident yet.</p>
+            ) : (
+              <div className="space-y-2 text-xs font-mono">
+                {auditLogs.map((e) => (
+                  <div key={e.id} className="flex gap-3">
+                    <span className="text-muted whitespace-nowrap">
+                      {new Date(e.timestamp).toLocaleTimeString()}
+                    </span>
+                    <span className="text-slate-300">{e.username}</span>
+                    <span className="text-slate-200">{e.action}</span>
+                    <Badge tone={e.result === "SUCCESS" ? "signal" : "critical"}>{e.result}</Badge>
+                  </div>
+                ))}
+              </div>
+            )}
+          </Panel>
         </TabsContent>
       </Tabs>
     </div>

@@ -1,12 +1,12 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
-
 from app.database.session import get_db
 from app.ai.context_builder import build_context
 from app.ai.factory import run_investigation
 from app.services.mitre_mapping import techniques_for_rules
 from app.services.response_center import create_recommended_actions, serialize_action
+from app.services.audit import log_action
 from app.models.alert import Alert
 from app.models.ai_investigation import AIInvestigation
 from app.models.event import Event
@@ -88,7 +88,7 @@ def _load_incident_or_404(db: Session, incident_id: str) -> Incident:
 async def investigate_incident(
     incident_id: str,
     db: Session = Depends(get_db),
-    _: User = Depends(can_investigate),
+    user: User = Depends(can_investigate),
 ) -> InvestigationOut:
     incident = _load_incident_or_404(db, incident_id)
     alerts = list(
@@ -105,6 +105,12 @@ async def investigate_incident(
         )
     )
     db.commit()
+
+    log_action(
+        db, username=user.username, action="Ran AI investigation",
+        resource_type="incident", resource_id=incident.incident_id,
+        new_value={"provider_used": provider_used},
+    )
     return result
 
 
