@@ -17,11 +17,13 @@ python-multipart==0.0.9
 
 # --- WebSockets (for real-time demo, Phase 4+) ---
 websockets==13.1
+# (httpx, used by the AI provider in Phase 10 too, is listed below under Testing)
 
 # --- ML (Phase 6+) ---
 pandas==2.2.3
 numpy==2.1.1
 scikit-learn==1.5.2
+joblib==1.4.2
 
 # --- Testing (Phase 15) ---
 pytest==8.3.3

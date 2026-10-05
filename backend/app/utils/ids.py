@@ -31,6 +31,11 @@ def next_incident_id(db: Session) -> tuple[int, str]:
     return next_id, f"INC-{1000 + next_id}"
 
 
+def next_response_id(db: Session) -> tuple[int, str]:
+    next_id = db.execute(text("SELECT nextval('response_actions_id_seq')")).scalar_one()
+    return next_id, f"RESP-{next_id:06d}"
+
+
 def parse_severity(value: str) -> Severity:
     """Convert a lowercase query-string value ("critical") into the
     Severity enum member, so filters compare enum-to-enum rather than

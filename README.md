@@ -24,11 +24,11 @@ Currently complete:
 - [x] Phase 5 — Rule detection
 - [x] Phase 6 — ML anomaly detection
 - [x] Phase 7 — Alert correlation
-- [x] Phase 8 — Risk engine (this phase)
+- [x] Phase 8 — Risk engine
 - [x] Phase 9 — Incident page
-- [ ] Phase 10 — AI SOC Analyst
-- [ ] Phase 11 — MITRE ATT&CK
-- [ ] Phase 12 — Response Center
+- [x] Phase 10 — AI SOC Analyst (this phase)
+- [x] Phase 11 — MITRE ATT&CK
+- [x] Phase 12 — Response Center
 - [ ] Phase 13 — Audit logs
 - [ ] Phase 14 — Dataset / ML training page
 - [ ] Phase 15 — Testing
@@ -407,4 +407,99 @@ critical asset, 5 correlated alerts, a genuine matching ML anomaly)
 scored 92/100; an incident on an unregistered host correctly used the
 default tier (10 points, not silently 0); every breakdown's points
 summed exactly to the reported total.
+
+## Incident Page (Phase 9)
+
+A dedicated `/incidents/:incidentId` page replaces the old inline
+expand-in-table view, with the 8 tabs the spec names:
+
+- **Overview** — the risk breakdown (bars, from Phase 8), key facts,
+  and the full correlation trail (which alerts, why they're grouped).
+- **Timeline** — every linked event in chronological order.
+- **Evidence** — the same events as a raw forensic table (ids, IPs,
+  host, full JSON metadata).
+- **Entities** — the users/IPs/hosts/destinations involved, plus the
+  spec's incident graph (User → Source IP → Authentication → Endpoint
+  → Process → Network), with only the stages this specific incident's
+  events actually touched lit up. A DNS-only incident and the
+  multi-stage flagship light up genuinely different stages — it's
+  computed from real linked events, not a static diagram.
+- **AI Investigation, MITRE ATT&CK, Response, Audit** — honest "not
+  built yet" placeholders naming Phases 10–13, same convention used
+  for every other not-yet-built area of the app.
+
+**Backend change:** `GET /api/incidents/{id}` now returns the
+incident's full linked `events` (chronologically ordered), not just
+their ids — Timeline and Evidence need the actual event data to
+render. Verified: events are always time-ordered, and every alert's
+own triggering events are a confirmed subset of the incident's linked
+events, so a Timeline/Evidence tab is never missing anything an alert
+reports it relied on.
+
+The Incidents list page (`/incidents`) is now a pure, simpler list —
+each row links to its detail page instead of expanding inline. Built
+with Radix Tabs (`@radix-ui/react-tabs`, in the dependency list since
+Phase 1 but unused until now).
+
+## AI SOC Analyst (Phase 10)
+
+A pluggable AI provider abstraction, with a fully offline, zero-API-key
+default — per the spec, the whole demo must work with no key configured.
+
+**`MockAIProvider`** (the default, `AI_PROVIDER=mock`) is deterministic
+and data-driven: every sentence in a report is built from real values
+pulled out of the incident's own alerts and events (actual IPs,
+usernames, byte counts, timestamps, the real risk score) via per-rule
+evidence templates and per-incident-type narratives — never generic
+placeholder text. Verified against every incident currently in the
+database: executive summaries genuinely differ by incident type, every
+observed-evidence line traces to a real alert, and the MITRE mapping
+and risk explanation reference the incident's actual rules and risk
+breakdown.
+
+**The output matches the spec's structure exactly**, with the four
+required categories kept as separate, explicit fields rather than
+inline tags: Executive Summary, What Happened, Timeline, **Observed
+Evidence** (only facts literally present in the data), **Inference**
+(interpretation, visually distinguished in the UI with a dashed
+border and italics — never merged with evidence), Affected Assets,
+Indicators, MITRE ATT&CK Mapping, Risk Explanation, Recommended
+Investigation/Containment/Remediation, **Unknown Information** (what
+the data genuinely doesn't tell you), and Questions for Human Analyst.
+
+**MITRE mapping** (`app/services/mitre_mapping.py`) uses real, public
+ATT&CK technique ids (T1110 Brute Force, T1059.001 PowerShell, T1078
+Valid Accounts, T1071.004 DNS, T1041 Exfiltration Over C2) and reuses
+each rule's own `confidence` setting from Phase 8 rather than a
+separate fabricated number. This module is shared — Phase 11 builds
+the dedicated MITRE browsing page on top of the same mapping.
+
+**A real LLM-backed provider** (`app/ai/llm_provider.py`) is also
+implemented, for any OpenAI-compatible `/chat/completions` endpoint
+(Groq, OpenRouter, or a custom `AI_BASE_URL`). Per the spec — "if an
+external LLM is unavailable, the system should still generate a
+structured investigation" — any failure (missing config, network
+error, bad response) falls back to `MockAIProvider` automatically;
+`provider_used` always records which one actually ran (e.g.
+`mock (llm_failed: HTTPStatusError)` on a fallback), so a fallback is
+never silently indistinguishable from a real call.
+
+**Honesty about what's tested:** `MockAIProvider` is fully tested
+end-to-end against real incidents. The LLM provider's *integration
+code* — request shape, auth header, JSON-mode parsing, and the
+fallback path — was mechanically verified against a local stub server
+(3 cases: successful call, server error, and no API key configured —
+all passed). It has **not** been exercised against a real LLM backend
+in this environment, since no API key is available here. Set
+`AI_PROVIDER` / `AI_API_KEY` / `AI_MODEL` (and `AI_BASE_URL` for a
+custom `openai_compatible` endpoint) in `.env` to try it for real —
+Gemini's native API isn't implemented yet (it doesn't share the
+OpenAI chat-completions shape); setting `AI_PROVIDER=gemini` falls
+back to Mock with a clear reason rather than crashing.
+
+**API:** `POST /api/incidents/{id}/investigate` (ADMIN/SOC_ANALYST —
+always creates a new, timestamped report, so history is preserved)
+and `GET /api/incidents/{id}/investigation` (any role — the most
+recent report, or `null` if none exists yet). The Incident Page's AI
+Investigation tab calls these directly.
 

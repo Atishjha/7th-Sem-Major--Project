@@ -3,6 +3,10 @@ import type { DashboardResponse } from "@/types/dashboard";
 import type { SocEvent, SimulatorStatus, ScenarioName, Alert, DetectionRule } from "@/types/event";
 import type { MLStatus, MLPrediction, MLTrainingRun } from "@/types/ml";
 import type { Incident, IncidentDetail } from "@/types/incident";
+import type { Investigation } from "@/types/ai";
+import type { TechniqueObservation } from "@/types/mitre";
+import type { MitreTechnique } from "@/types/ai";
+import type { ResponseAction } from "@/types/response";
 
 const API_BASE = "/api";
 const TOKEN_KEY = "soc_token";
@@ -138,3 +142,28 @@ export const getIncidents = (params: { limit?: number; status?: string; severity
 
 export const getIncident = (incidentId: string) =>
   request<IncidentDetail>(`/incidents/${incidentId}`);
+
+export const investigateIncident = (incidentId: string) =>
+  request<Investigation>(`/incidents/${incidentId}/investigate`, { method: "POST" });
+
+export const getInvestigation = (incidentId: string) =>
+  request<Investigation | null>(`/incidents/${incidentId}/investigation`);
+
+export const getMitreTechniques = () => request<TechniqueObservation[]>("/mitre/techniques");
+
+export const getIncidentMitre = (incidentId: string) =>
+  request<MitreTechnique[]>(`/incidents/${incidentId}/mitre`);
+
+export const getIncidentResponseActions = (incidentId: string) =>
+  request<ResponseAction[]>(`/incidents/${incidentId}/response`);
+
+export const getAllResponseActions = (statusFilter?: string) => {
+  const suffix = statusFilter ? `?status_filter=${statusFilter}` : "";
+  return request<ResponseAction[]>(`/response${suffix}`);
+};
+
+export const approveResponseAction = (responseId: string) =>
+  request<ResponseAction>(`/response/${responseId}/approve`, { method: "POST" });
+
+export const rejectResponseAction = (responseId: string) =>
+  request<ResponseAction>(`/response/${responseId}/reject`, { method: "POST" });

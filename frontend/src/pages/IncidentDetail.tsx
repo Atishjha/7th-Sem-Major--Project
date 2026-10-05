@@ -8,6 +8,14 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { RiskBreakdown } from "@/components/RiskBreakdown";
 import { CorrelationTrail } from "@/components/CorrelationTrail";
 import { IncidentGraph } from "@/components/IncidentGraph";
+import { InvestigationReport } from "@/components/InvestigationReport";
+import { MitreTable } from "@/components/MitreTable";
+import { ResponseActionCard } from "@/components/ResponseActionCard";
+import { Button } from "@/components/ui/button";
+import { useAuth } from "@/hooks/useAuth";
+import * as api from "@/services/api";
+import type { Investigation, MitreTechnique } from "@/types/ai";
+import type { ResponseAction } from "@/types/response";
 import { useEventStream } from "@/hooks/useEventStream";
 import { getIncident } from "@/services/api";
 import type { IncidentDetail as IncidentDetailType } from "@/types/incident";
@@ -29,8 +37,15 @@ function NotBuiltYet({ phase }: { phase: string }) {
 
 export default function IncidentDetail() {
   const { incidentId } = useParams<{ incidentId: string }>();
+  const { user } = useAuth();
+  const canInvestigate = user?.role === "ADMIN" || user?.role === "SOC_ANALYST";
   const [incident, setIncident] = useState<IncidentDetailType | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [investigation, setInvestigation] = useState<Investigation | null>(null);
+  const [investigating, setInvestigating] = useState(false);
+  const [investigateError, setInvestigateError] = useState<string | null>(null);
+  const [mitre, setMitre] = useState<MitreTechnique[] | null>(null);
+  const [responseActions, setResponseActions] = useState<ResponseAction[] | null>(null);
   const { liveIncidents } = useEventStream();
 
   function load() {
@@ -41,6 +56,27 @@ export default function IncidentDetail() {
   }
 
   useEffect(load, [incidentId]);
+
+  useEffect(() => {
+    if (!incidentId) return;
+    api.getInvestigation(incidentId).then(setInvestigation);
+    api.getIncidentMitre(incidentId).then(setMitre);
+    api.getIncidentResponseActions(incidentId).then(setResponseActions);
+  }, [incidentId]);
+
+  async function handleInvestigate() {
+    if (!incidentId) return;
+    setInvestigateError(null);
+    setInvestigating(true);
+    try {
+      const report = await api.investigateIncident(incidentId);
+      setInvestigation(report);
+    } catch (e) {
+      setInvestigateError(e instanceof api.ApiError ? e.message : "Investigation failed");
+    } finally {
+      setInvestigating(false);
+    }
+  }
 
   // keep it current while a running scenario keeps adding alerts to it
   useEffect(() => {
@@ -234,14 +270,64 @@ export default function IncidentDetail() {
           </div>
         </TabsContent>
 
-        <TabsContent value="ai">
-          <NotBuiltYet phase="the AI SOC Analyst lands in Phase 10" />
+        <TabsContent value="ai" className="space-y-4">
+          <div className="flex items-center justify-between">
+            <p className="text-sm text-muted">
+              {investigation
+                ? "Showing the most recent AI investigation for this incident."
+                : "No investigation has been run yet for this incident."}
+            </p>
+            {canInvestigate ? (
+              <Button size="sm" disabled={investigating} onClick={handleInvestigate}>
+                {investigating ? "Investigating…" : investigation ? "Re-run investigation" : "Run AI investigation"}
+              </Button>
+            ) : (
+              <span className="text-xs text-severity-medium">
+                Your role ({user?.role}) can view but not run investigations.
+              </span>
+            )}
+          </div>
+          {investigateError && <p className="text-sm text-severity-critical">{investigateError}</p>}
+          {investigation ? (
+            <InvestigationReport report={investigation} />
+          ) : (
+            <NotBuiltYet phase={canInvestigate ? "click \u201cRun AI investigation\u201d above" : "ask an analyst or admin to run one"} />
+          )}
         </TabsContent>
         <TabsContent value="mitre">
-          <NotBuiltYet phase="MITRE ATT&CK mapping lands in Phase 11" />
+          <Panel title="MITRE ATT&CK mapping for this incident">
+            {mitre === null ? (
+              <p className="text-sm text-muted font-mono">Loading…</p>
+            ) : (
+              <MitreTable techniques={mitre} />
+            )}
+          </Panel>
         </TabsContent>
         <TabsContent value="response">
-          <NotBuiltYet phase="the Response Center lands in Phase 12" />
+          <Panel title="Response actions for this incident">
+            {responseActions === null ? (
+              <p className="text-sm text-muted font-mono">Loading…</p>
+            ) : responseActions.length === 0 ? (
+              <p className="text-sm text-muted font-mono">
+                No response actions are recommended for this incident type.
+              </p>
+            ) : (
+              <div className="space-y-2.5">
+                {responseActions.map((a) => (
+                  <ResponseActionCard
+                    key={a.response_id}
+                    action={a}
+                    canDecide={canInvestigate}
+                    onDecided={(updated) =>
+                      setResponseActions((prev) =>
+                        prev!.map((x) => (x.response_id === updated.response_id ? updated : x))
+                      )
+                    }
+                  />
+                ))}
+              </div>
+            )}
+          </Panel>
         </TabsContent>
         <TabsContent value="audit">
           <NotBuiltYet phase="audit logging lands in Phase 13" />

@@ -10,6 +10,8 @@ import MlAnomalyDetection from "@/pages/MlAnomalyDetection";
 import Alerts from "@/pages/Alerts";
 import Incidents from "@/pages/Incidents";
 import IncidentDetail from "@/pages/IncidentDetail";
+import MitreAttack from "@/pages/MitreAttack";
+import ResponseCenter from "@/pages/ResponseCenter";
 import Demo from "@/pages/Demo";
 import ComingSoon from "@/pages/ComingSoon";
 
@@ -47,15 +49,7 @@ export default function App() {
                   />
                 }
               />
-              <Route
-                path="/mitre"
-                element={
-                  <ComingSoon
-                    title="MITRE ATT&CK"
-                    phaseNote="technique mapping lands in Phase 11"
-                  />
-                }
-              />
+              <Route path="/mitre" element={<MitreAttack />} />
               <Route
                 path="/threat-intel"
                 element={
@@ -65,15 +59,7 @@ export default function App() {
                   />
                 }
               />
-              <Route
-                path="/response"
-                element={
-                  <ComingSoon
-                    title="Response Center"
-                    phaseNote="simulated response actions land in Phase 12"
-                  />
-                }
-              />
+              <Route path="/response" element={<ResponseCenter />} />
               <Route
                 path="/audit"
                 element={

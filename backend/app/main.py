@@ -6,15 +6,20 @@ indicators, and response actions produced by this system are
 synthetic or simulated — see /docs and the README for the full
 academic disclaimer.
 """
+
 from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+
 from app.config import settings
-from app.api import health, auth, dashboard, events, simulator, ws, alerts, detections, rules, ml, incidents, assets
+from app.api import health, auth, dashboard, events, simulator, ws, alerts, detections, rules, ml, incidents, assets, mitre, response
 from app.database.session import SessionLocal
 from app.detectors.engine import ensure_default_rules
 from app.services.correlation import backfill_uncorrelated_alerts
 from app.services.risk_engine import ensure_default_assets, recompute_all_incidents
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     db = SessionLocal()
@@ -26,6 +31,8 @@ async def lifespan(app: FastAPI):
     finally:
         db.close()
     yield
+
+
 app = FastAPI(
     title=settings.APP_NAME,
     description=(
@@ -36,6 +43,7 @@ app = FastAPI(
     version="0.1.0",
     lifespan=lifespan,
 )
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.CORS_ORIGINS,
@@ -43,6 +51,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
 app.include_router(health.router, prefix=settings.API_V1_PREFIX)
 app.include_router(auth.router, prefix=settings.API_V1_PREFIX)
 app.include_router(dashboard.router, prefix=settings.API_V1_PREFIX)
@@ -54,7 +63,11 @@ app.include_router(rules.router, prefix=settings.API_V1_PREFIX)
 app.include_router(ml.router, prefix=settings.API_V1_PREFIX)
 app.include_router(incidents.router, prefix=settings.API_V1_PREFIX)
 app.include_router(assets.router, prefix=settings.API_V1_PREFIX)
+app.include_router(mitre.router, prefix=settings.API_V1_PREFIX)
+app.include_router(response.router, prefix=settings.API_V1_PREFIX)
 app.include_router(ws.router)  # no /api prefix — matches the frontend's /ws proxy rule
+
+
 @app.get("/")
 def root() -> dict:
     return {
