@@ -1,6 +1,9 @@
 from datetime import datetime
 from typing import Any
+
 from pydantic import BaseModel
+
+
 class MLTrainingRunOut(BaseModel):
     id: int
     model_type: str
@@ -14,9 +17,14 @@ class MLTrainingRunOut(BaseModel):
     evaluation: dict[str, Any]
     anomalies_flagged: int
     trained_at: datetime
+    source: str
+    dataset_filename: str | None
+
     class Config:
         from_attributes = True
         protected_namespaces = ()
+
+
 class MLPredictionOut(BaseModel):
     id: int
     source_ip: str
@@ -24,11 +32,16 @@ class MLPredictionOut(BaseModel):
     features: dict[str, float]
     anomaly_score: float
     is_anomalous: bool
+
     class Config:
         from_attributes = True
+
+
 class TrainRequest(BaseModel):
     contamination: float = 0.05
     window_minutes: int = 5
+
+
 class MLStatusOut(BaseModel):
     has_model: bool
     latest_run: MLTrainingRunOut | None

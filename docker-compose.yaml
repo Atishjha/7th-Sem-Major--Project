@@ -39,6 +39,7 @@ services:
     volumes:
       - ./backend:/app
       - ./data:/app/data
+      - ./ml:/app/ml
 
   frontend:
     build: ./frontend

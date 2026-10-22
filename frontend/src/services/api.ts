@@ -8,6 +8,7 @@ import type { TechniqueObservation } from "@/types/mitre";
 import type { MitreTechnique } from "@/types/ai";
 import type { ResponseAction } from "@/types/response";
 import type { AuditLogEntry } from "@/types/audit";
+import type { DatasetFiles, PreprocessResult, DatasetTrainingRun } from "@/types/dataset";
 
 const API_BASE = "/api";
 const TOKEN_KEY = "soc_token";
@@ -180,3 +181,40 @@ export const getAuditLogs = (
   const suffix = qs.toString() ? `?${qs.toString()}` : "";
   return request<AuditLogEntry[]>(`/audit${suffix}`);
 };
+
+export const getDatasetFiles = () => request<DatasetFiles>("/dataset/files");
+
+export async function uploadDataset(file: File): Promise<{ filename: string; size_bytes: number; modified_at: string }> {
+  const token = getToken();
+  const formData = new FormData();
+  formData.append("file", file);
+  const res = await fetch("/api/dataset/upload", {
+    method: "POST",
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    body: formData,
+  });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new ApiError(res.status, body.detail ?? res.statusText);
+  }
+  return res.json();
+}
+
+export const preprocessDataset = (raw_filename: string, label_column?: string) =>
+  request<PreprocessResult>("/dataset/preprocess", {
+    method: "POST",
+    body: JSON.stringify({ raw_filename, label_column: label_column || null }),
+  });
+
+export const trainOnDataset = (params: {
+  processed_filename: string;
+  label_column?: string;
+  attack_label_values?: string[];
+  contamination?: number;
+}) =>
+  request<DatasetTrainingRun>("/dataset/train", {
+    method: "POST",
+    body: JSON.stringify(params),
+  });
+
+export const getDatasetRuns = () => request<DatasetTrainingRun[]>("/dataset/runs");

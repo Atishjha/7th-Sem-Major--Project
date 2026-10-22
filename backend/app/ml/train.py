@@ -19,14 +19,13 @@ import numpy as np
 from sklearn.ensemble import IsolationForest
 from sklearn.preprocessing import StandardScaler
 from sqlalchemy.orm import Session
-
 from app.ml.features import FEATURE_COLUMNS, build_feature_matrix
+from app.utils.paths import project_root
 from app.models.ml_prediction import MLPrediction
 from app.models.ml_training_run import MLTrainingRun
 
-# backend/app/ml/train.py -> parents[3] is the project root, where the
-# spec's top-level ml/ directory lives (sibling to backend/ and frontend/).
-MODEL_DIR = Path(__file__).resolve().parents[3] / "ml" / "models"
+PROJECT_ROOT = project_root()
+MODEL_DIR = PROJECT_ROOT / "ml" / "models"
 
 MIN_SAMPLES_TO_TRAIN = 5
 
@@ -74,7 +73,10 @@ def train_and_score(
 
     MODEL_DIR.mkdir(parents=True, exist_ok=True)
     trained_at = datetime.now(timezone.utc)
-    model_version = f"isolation_forest_{trained_at.strftime('%Y%m%d_%H%M%S')}"
+    # Microsecond precision (not just seconds): two training calls completing
+    # within the same second would otherwise collide on the unique constraint —
+    # a real bug this project hit and fixed in Phase 14's testing.
+    model_version = f"isolation_forest_{trained_at.strftime('%Y%m%d_%H%M%S_%f')}"
     file_path = MODEL_DIR / f"{model_version}.joblib"
     joblib.dump({"model": model, "scaler": scaler, "features": FEATURE_COLUMNS}, file_path)
 
@@ -98,7 +100,7 @@ def train_and_score(
             )
         },
         anomalies_flagged=anomalies_flagged,
-        file_path=str(file_path.relative_to(MODEL_DIR.parents[1])),
+        file_path=str(file_path.relative_to(PROJECT_ROOT)),
         trained_at=trained_at,
     )
     db.add(training_run)

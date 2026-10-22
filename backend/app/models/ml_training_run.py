@@ -9,11 +9,16 @@ labeled attack/normal dataset, so per the spec we never invent an
 accuracy number — an unsupervised model with no ground truth reports
 "Not Applicable", not a fabricated metric.
 """
+
 from datetime import datetime, timezone
 from typing import Any
+
 from sqlalchemy import String, DateTime, Integer, Float, JSON
 from sqlalchemy.orm import Mapped, mapped_column
+
 from app.database.base import Base
+
+
 class MLTrainingRun(Base):
     __tablename__ = "ml_training_runs"
 
@@ -32,6 +37,11 @@ class MLTrainingRun(Base):
 
     anomalies_flagged: Mapped[int] = mapped_column(Integer, default=0)
     file_path: Mapped[str] = mapped_column(String(255))
+
+    # "event_stream" (Phase 6, this project's own events, always unsupervised)
+    # or "uploaded_dataset" (Phase 14, a user-supplied CSV/Parquet file).
+    source: Mapped[str] = mapped_column(String(32), default="event_stream")
+    dataset_filename: Mapped[str | None] = mapped_column(String(255), nullable=True)
 
     trained_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
