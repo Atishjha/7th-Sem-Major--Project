@@ -28,10 +28,10 @@ const ENTITY_LABELS: Record<string, string> = {
   destination_ips: "Destinations",
 };
 
-function NotBuiltYet({ phase }: { phase: string }) {
+function NoReportYet({ hint }: { hint: string }) {
   return (
     <Panel className="text-center py-12">
-      <p className="text-sm text-muted">This tab isn't built yet — {phase}.</p>
+      <p className="text-sm text-muted">No AI investigation has been run for this incident yet — {hint}.</p>
     </Panel>
   );
 }
@@ -294,7 +294,7 @@ export default function IncidentDetail() {
           {investigation ? (
             <InvestigationReport report={investigation} />
           ) : (
-            <NotBuiltYet phase={canInvestigate ? "click \u201cRun AI investigation\u201d above" : "ask an analyst or admin to run one"} />
+            <NoReportYet hint={canInvestigate ? "click \u201cRun AI investigation\u201d above" : "ask an analyst or admin to run one"} />
           )}
         </TabsContent>
         <TabsContent value="mitre">

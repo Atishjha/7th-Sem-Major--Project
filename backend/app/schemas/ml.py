@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Any
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class MLTrainingRunOut(BaseModel):
@@ -38,8 +38,11 @@ class MLPredictionOut(BaseModel):
 
 
 class TrainRequest(BaseModel):
-    contamination: float = 0.05
-    window_minutes: int = 5
+    # IsolationForest only accepts contamination in (0, 0.5]; window_minutes
+    # is a divisor in feature engineering, so it must be >= 1. Validating here
+    # turns bad input into a clean 422 instead of an unhandled 500.
+    contamination: float = Field(0.05, gt=0, le=0.5)
+    window_minutes: int = Field(5, ge=1, le=1440)
 
 
 class MLStatusOut(BaseModel):

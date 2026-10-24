@@ -29,6 +29,12 @@ class Settings(BaseSettings):
     JWT_ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60
 
+    # --- First-run bootstrap (Phase 16) ---
+    # Create the three documented demo accounts (admin / analyst / viewer) on
+    # startup if they don't exist. Convenient for the academic demo; set to
+    # false for anything that is not a demo.
+    SEED_DEMO_USERS: bool = True
+
     # --- AI provider abstraction (Phase 10) ---
     AI_PROVIDER: str = "mock"  # mock | groq | openrouter | openai_compatible
     AI_API_KEY: str | None = None

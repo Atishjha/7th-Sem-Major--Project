@@ -1,6 +1,6 @@
 from typing import Any
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class DatasetFileOut(BaseModel):
@@ -34,4 +34,4 @@ class TrainDatasetRequest(BaseModel):
     processed_filename: str
     label_column: str | None = None
     attack_label_values: list[str] | None = None
-    contamination: float = 0.05
+    contamination: float = Field(0.05, gt=0, le=0.5)

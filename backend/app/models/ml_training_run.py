@@ -46,3 +46,9 @@ class MLTrainingRun(Base):
     trained_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
     )
+
+
+# Only runs trained on the live event stream write per-source-IP predictions.
+# Runs trained on uploaded datasets (source="uploaded_dataset") have none, so
+# anything that reads "the current model's predictions" must filter on this.
+EVENT_STREAM_SOURCE = "event_stream"

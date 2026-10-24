@@ -19,7 +19,7 @@ from app.models.common import Severity
 from app.models.event import Event
 from app.models.incident import Incident
 from app.models.ml_prediction import MLPrediction
-from app.models.ml_training_run import MLTrainingRun
+from app.models.ml_training_run import EVENT_STREAM_SOURCE, MLTrainingRun
 from app.schemas.dashboard import (
     CategoryCount,
     DashboardCharts,
@@ -68,7 +68,10 @@ def _detection_type_distribution(db: Session) -> list[CategoryCount]:
 
 def _latest_training_run_id(db: Session) -> int | None:
     return db.scalar(
-        select(MLTrainingRun.id).order_by(MLTrainingRun.trained_at.desc()).limit(1)
+        select(MLTrainingRun.id)
+        .where(MLTrainingRun.source == EVENT_STREAM_SOURCE)
+        .order_by(MLTrainingRun.trained_at.desc())
+        .limit(1)
     )
 
 

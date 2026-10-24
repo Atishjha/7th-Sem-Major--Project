@@ -34,7 +34,12 @@ from pathlib import Path
 
 import pandas as pd
 
-sys.path.append(str(Path(__file__).resolve().parents[1] / "backend"))
+_ROOT = Path(__file__).resolve().parents[1]
+# Host layout: <project>/backend/app ; in-container layout: /app/app (scripts are mounted at /app/scripts).
+for _candidate in (_ROOT / "backend", _ROOT):
+    if (_candidate / "app" / "__init__.py").exists():
+        sys.path.append(str(_candidate))
+        break
 
 from sqlalchemy import text  # noqa: E402
 from sqlalchemy.exc import OperationalError  # noqa: E402

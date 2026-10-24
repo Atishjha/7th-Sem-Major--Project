@@ -14,8 +14,7 @@ analyst, calculates risk, and recommends safe response actions.
 
 ## Status
 
-This README is being built up phase by phase alongside the code.
-Currently complete:
+All 16 phases are complete.
 
 - [x] Phase 1 — Project setup
 - [x] Phase 2 — Database + authentication
@@ -26,87 +25,123 @@ Currently complete:
 - [x] Phase 7 — Alert correlation
 - [x] Phase 8 — Risk engine
 - [x] Phase 9 — Incident page
-- [x] Phase 10 — AI SOC Analyst (this phase)
+- [x] Phase 10 — AI SOC Analyst
 - [x] Phase 11 — MITRE ATT&CK
 - [x] Phase 12 — Response Center
-- [ ] Phase 13 — Audit logs
-- [ ] Phase 14 — Dataset / ML training page
-- [ ] Phase 15 — Testing
-- [ ] Phase 16 — Docker + documentation polish
+- [x] Phase 13 — Audit logs
+- [x] Phase 14 — Dataset / ML training page
+- [x] Phase 15 — Testing
+- [x] Phase 16 — Docker + documentation polish (this phase)
+
+## What it does
+
+1. **Collects** synthetic security events (a built-in simulator with five attack scenarios, plus 600 baseline events).
+2. **Detects** with five configurable rules and an Isolation Forest anomaly model.
+3. **Correlates** alerts into incidents and explains *why* each alert joined.
+4. **Scores** every incident 0-100 from five inspectable factors.
+5. **Explains** incidents with an AI SOC analyst that works offline and never fails to answer.
+6. **Maps** detections to MITRE ATT&CK techniques.
+7. **Recommends** response actions that an analyst approves or rejects. Outcomes are simulated; nothing real is touched.
+8. **Records** every privileged action in an append-only audit log.
 
 ## Tech Stack
 
-- **Frontend:** React, TypeScript, Vite, Tailwind CSS, shadcn/ui-style
-  components, Recharts, Leaflet, Lucide icons
-- **Backend:** Python, FastAPI, Pydantic, SQLAlchemy, PostgreSQL
+- **Frontend:** React, TypeScript, Vite, Tailwind CSS, shadcn/ui-style components, Recharts, Leaflet, Lucide icons
+- **Backend:** Python, FastAPI, Pydantic, SQLAlchemy, Alembic, PostgreSQL
 - **ML:** pandas, NumPy, scikit-learn (Isolation Forest)
-- **AI:** pluggable provider abstraction (Gemini / Groq / OpenAI-compatible
-  / OpenRouter) with a deterministic `MockAIProvider` fallback — the
-  app works fully **without any API key**
+- **AI:** pluggable provider abstraction (Groq, OpenRouter, or any OpenAI-compatible endpoint) with a deterministic
+  `MockAIProvider` fallback, so the app works fully **without any API key**
+- **Tests:** pytest (real PostgreSQL), Vitest + Testing Library
 - **Deployment:** Docker Compose
 
-## Project Structure
+## Quick start (Docker)
 
-See `docs/architecture.md` (added in a later phase) for the full
-diagram. Top-level layout:
-
-```text
-ai-cyber-defense/
-├── frontend/     # React + TS + Vite SPA
-├── backend/      # FastAPI application
-├── ml/           # training scripts, models, feature engineering
-├── data/         # raw / processed / demo datasets (synthetic only)
-├── docs/         # architecture, dataset, ML, AI analyst, demo script
-├── scripts/      # data generation / seeding / training entrypoints
-└── docker-compose.yml
-```
-
-## Running it (Phase 1 scope)
-
-Right now, only the skeleton API and a placeholder frontend screen
-exist — enough to prove the stack boots end-to-end. Later phases add
-the database, detection engine, ML, AI analyst, and the full UI.
-
-### Option A — Docker Compose (recommended once Phase 2+ lands)
+Needs Docker Desktop. From the project root:
 
 ```bash
-cp .env.example .env
+cp .env.example .env          # Windows PowerShell: Copy-Item .env.example .env
 docker compose up --build
 ```
 
-- Frontend: http://localhost:5173
-- Backend docs (OpenAPI/Swagger): http://localhost:8000/docs
-- Backend health check: http://localhost:8000/api/health
+Then open **http://localhost:5173** and sign in as `analyst` / `analyst123` (see [Demo Credentials](#demo-credentials)).
 
-### Option B — Run backend locally without Docker
+The first start does the set-up for you (`python -m app.bootstrap` runs inside the backend container): it waits for
+PostgreSQL, creates the schema with Alembic, and creates the three demo accounts. Starting again is safe and changes
+nothing. If you already had a database from an earlier phase, it is detected and adopted without touching your data.
+
+For a good demo, seed the baseline events once (this also lets the ML model train, which needs at least 5 time windows):
 
 ```bash
+docker compose exec backend python scripts/seed_demo_data.py
+```
+
+| What | Where |
+|---|---|
+| App | http://localhost:5173 |
+| API docs (Swagger) | http://localhost:8000/docs |
+| Health check | http://localhost:8000/api/health |
+
+Stop with `docker compose down`. Add `-v` only if you want to **delete the database** and start from scratch.
+
+## Run without Docker
+
+You still need PostgreSQL (`docker compose up -d postgres` is the easy way).
+
+```bash
+# backend (use a virtual environment; see docs/troubleshooting.md)
 cd backend
+python -m venv .venv && source .venv/bin/activate     # Windows: .\.venv\Scripts\Activate.ps1
 pip install -r requirements.txt
+export DATABASE_URL=postgresql+psycopg2://socuser:socpassword@localhost:5432/soc_db   # PowerShell: $env:DATABASE_URL="..."
+python -m app.bootstrap
 uvicorn app.main:app --reload
-```
 
-Then visit http://localhost:8000/api/health — you should see:
-
-```json
-{
-  "status": "ok",
-  "service": "AI Cyber Defense Command Center",
-  "environment": "development",
-  "time": "..."
-}
-```
-
-### Option C — Run frontend locally without Docker
-
-```bash
+# frontend (second terminal)
 cd frontend
-npm install
+npm ci
 npm run dev
 ```
 
-Visit http://localhost:5173 — the placeholder screen will call the
-backend's `/api/health` endpoint and show its response.
+## The app
+
+| Page | What it is |
+|---|---|
+| Dashboard | KPIs, live event feed, charts |
+| Event Monitor | the raw event stream |
+| Detection Engine | the five rules; enable/disable and tune thresholds live |
+| ML Anomaly Detection | train the model on the event stream; top anomalous windows |
+| Alerts | every rule match |
+| Incidents | correlated alerts; open one for overview, timeline, evidence, entities, AI investigation, MITRE, response, audit |
+| Risk Engine | how the score is built; incidents ranked by risk |
+| AI SOC Analyst | pick an incident and investigate it |
+| MITRE ATT&CK | technique coverage with real alert evidence |
+| Threat Intelligence | states that no external feeds are queried (all data is synthetic) |
+| Response Center | approve or reject recommended actions (simulated) |
+| Audit Logs | who did what, when; append-only |
+| Dataset & ML | upload, preprocess and train on public datasets with real metrics |
+| Demo Mode | start the five attack scenarios |
+| System Health | backend, ML model and simulator status |
+
+## Documentation
+
+| Doc | Contents |
+|---|---|
+| [docs/architecture.md](docs/architecture.md) | diagram, event pipeline, rules, risk score, data model, security model, known limitations |
+| [docs/ai-analyst.md](docs/ai-analyst.md) | how investigations are produced, providers, the fallback |
+| [docs/ml-and-datasets.md](docs/ml-and-datasets.md) | features, model, the no-labels-no-accuracy rule, NSL-KDD workflow |
+| [docs/api-reference.md](docs/api-reference.md) | every endpoint and who may call it (generated from the code) |
+| [docs/demo-script.md](docs/demo-script.md) | a 10-minute walkthrough and likely questions |
+| [docs/troubleshooting.md](docs/troubleshooting.md) | fixes for the problems actually hit while building this |
+
+## Roles
+
+| Role | May do |
+|---|---|
+| VIEWER | read everything |
+| SOC_ANALYST | read, plus change state: run scenarios, edit rules, train models, run investigations, approve/reject actions, upload datasets |
+| ADMIN | the same as SOC_ANALYST |
+
+A role is checked against the database on every request, not trusted from the token.
 
 ## Demo Credentials
 
@@ -118,8 +153,21 @@ backend's `/api/health` endpoint and show its response.
 | analyst  | analyst123  | SOC_ANALYST |
 | viewer   | viewer123   | VIEWER      |
 
-Passwords are hashed with bcrypt before storage — the database never
-holds plaintext.
+Passwords are hashed with bcrypt before storage; the database never holds plaintext. Set `SEED_DEMO_USERS=false`
+to stop the accounts being created.
+
+## Project layout
+
+```text
+ai-cyber-defense/
+├── backend/      FastAPI app (app/), Alembic migrations (alembic/), tests (tests/)
+├── frontend/     React + TypeScript SPA (tests live beside the code)
+├── scripts/      seed_demo_data, train_model, prepare_nslkdd, generate_api_docs, run_tests.sh
+├── data/  ml/    uploaded datasets and trained models (contents are git-ignored)
+├── docs/         documentation (see above)
+├── docker-compose.yml
+└── .env.example
+```
 
 ## Database + Auth (Phase 2)
 
@@ -502,4 +550,356 @@ always creates a new, timestamped report, so history is preserved)
 and `GET /api/incidents/{id}/investigation` (any role — the most
 recent report, or `null` if none exists yet). The Incident Page's AI
 Investigation tab calls these directly.
+
+## MITRE ATT&CK (Phase 11)
+
+A dedicated `/mitre` page, built on the same `mitre_mapping.py` module
+Phase 10 introduced for the AI analyst's output — one mapping, two
+consumers, never two different answers to "what technique is this."
+
+**System-wide coverage view:** shows all 5 of this project's rule-mapped
+techniques (T1110 Brute Force, T1059.001 PowerShell, T1078 Valid
+Accounts, T1071.004 DNS, T1041 Exfiltration Over C2), each with its real
+observation history — alert count, incident count, last seen, and
+clickable evidence linking straight to the incidents that triggered it.
+A technique with zero alerts shows **no fabricated evidence** — just an
+honest "not yet observed", dimmed in the table, rather than hiding the
+row or inventing a count. Verified against the real `alerts` table:
+every reported `alert_count` matched exactly, and every
+`evidence_incident_id` resolved to a real incident.
+
+**The Incident Page's MITRE tab** (`/incidents/:id`, placeholder since
+Phase 9) is now real too: it shows this specific incident's own
+mapping via a lightweight `GET /api/incidents/{id}/mitre` that doesn't
+require running an AI investigation first. Cross-checked against the
+AI analyst's independently-computed `mitre_mapping` field for the same
+incident — they match exactly, since both read the same shared module.
+
+**Read-only for every role, including VIEWER** — this is coverage
+reporting, not a configurable control surface like Detection Rules.
+
+One honest gap: every rule in the current demo database has fired at
+least once, so the "zero alerts, not yet observed" display path
+wasn't exercised by a live incident during testing — it's correct by
+construction (the underlying SQL aggregates naturally return
+`None`/empty for no matching rows, verified by reading the code path
+directly), but it hasn't been seen live. A fresh database, or a rule
+no scenario happens to trigger, will show it.
+
+## Response Center (Phase 12)
+
+The spec's 6 safe, simulated actions — Disable Account, Revoke
+Session, Isolate Endpoint, Block Indicator, Reset Credentials, Create
+Firewall Rule — with the full workflow: AI Recommendation → Analyst
+Review → Approve/Reject → Mock Action → Result. **Nothing here ever
+touches a real system.** Every result message says so explicitly.
+
+**Recommendations are data-driven, not generic:** which actions get
+suggested, and for what target, depends on the incident's own
+`incident_type` and its real primary entity — an `account_compromise`
+incident recommends Disable Account / Reset Credentials / Revoke
+Session against the actual affected username; `endpoint_compromise`
+recommends Isolate Endpoint against the actual affected hostname;
+network/DNS incident types recommend Block Indicator / Create
+Firewall Rule against the actual source IP. Generating recommendations
+is idempotent — reopening the Response tab never duplicates them.
+
+**Exact spec wording, verified, not assumed:** I generated a fresh
+PowerShell-scenario incident specifically to exercise the one case the
+spec gives a literal example for, and confirmed the real result message
+character-for-character:
+`Demo endpoint WIN-CLIENT-01 would be isolated. No real endpoint was modified.`
+— with the real hostname substituted, not hardcoded.
+
+**Two views, one data source:** the Incident Page's Response tab shows
+one incident's own actions; the global `/response` Response Center
+page is the cross-incident queue an analyst would actually triage
+from, filterable by status (pending / approved / rejected). Both use
+the same `ResponseActionCard` component and the same backend data —
+verified the global queue's count exactly equals the sum of every
+incident's own list.
+
+**RBAC:** reading the queue (either view) works for every role,
+including VIEWER; approving or rejecting requires ADMIN or
+SOC_ANALYST — verified a VIEWER gets a clean `403`, and that an
+already-decided action can't be decided again (`409`, not a silent
+overwrite).
+
+**API:** `GET /api/incidents/{id}/response` (incident-scoped, auto-
+recommends on first open), `GET /api/response` (global queue, filter
+by `?status_filter=`), `POST /api/response/{id}/approve`,
+`POST /api/response/{id}/reject` — the last two match the spec's exact
+endpoint paths.
+
+A bug caught during testing, not shipped: my first pass serialized
+`ResponseAction` via `ResponseActionOut.model_validate(action)`, which
+crashed immediately because `action_label` is a computed field, not a
+real column on the ORM model — Pydantic tries to read every schema
+field straight off the object before any manual dict edits ever run.
+Fixed with a proper `serialize_action()` helper shared by every
+endpoint that returns a response action, so there's exactly one
+correct serialization path, not several near-duplicates.
+
+## Audit Logs (Phase 13)
+
+The `audit_logs` table and a clean organizing principle for what gets
+logged: **every `require_role`-gated route that changes state**, with
+nothing missed and nothing fabricated. That's 6 call sites across 4
+routers — simulator start/stop, detection rule updates, AI
+investigations, and response action approve/reject — each calling one
+shared `log_action()` helper.
+
+`action`, `resource_type`, and `result` are free-text strings, not
+enums, by design: unlike `Severity` (a genuine fixed 4-value domain),
+the set of auditable actions will keep growing, and a new enum
+migration for every new action type would be the wrong tool.
+
+**Matches the spec's own example exactly:** approving a response
+action logs `resource_type="incident"`, `resource_id=<the incident's
+id>` — not the response action's own id — because that's what the
+spec's literal example row shows (`"Approved simulated endpoint
+isolation" | INC-1001 | SUCCESS`) and it's what lets the Incident
+Page's Audit tab show everything relevant to one incident with a
+single filtered query. Verified live: an approve action produced
+exactly `Approved simulated block indicator | incident:INC-1071 |
+SUCCESS`, and `GET /api/audit?resource_type=incident&resource_id=INC-1071`
+returned both that entry and the investigation that preceded it.
+
+**Real before/after values, not placeholders:** a detection rule
+update's `old_value`/`new_value` captured the actual config change
+(`query_threshold: 6 -> 7`), verified against what was actually sent.
+
+**Two views:** the global `/audit` page (filterable by resource type,
+expandable rows showing the full old/new value diff) and the Incident
+Page's Audit tab — the **last placeholder tab**, now real — scoped to
+just that incident, refreshing live when a response action gets
+decided from the same page.
+
+**Read-only for every role, including VIEWER** — accountability and
+transparency, the same pattern as the MITRE coverage view.
+
+**API:** `GET /api/audit` (matches the spec's exact endpoint path),
+filterable by `resource_type`, `resource_id`, and `username`.
+
+## Dataset & ML Training (Phase 14)
+
+The `/dataset` page: upload a CSV or Parquet file, preprocess it, then
+train and evaluate an Isolation Forest against it. Files can also be
+dropped straight into `data/raw/` by hand — the file list is just a
+directory listing, no hidden state.
+
+**This is where the spec's conditional rule finally becomes real.**
+Phase 6's `/ml` page trains on this project's own events, which have no
+ground truth, so its accuracy is honestly "Not Applicable". Here, if
+you name a **label column** (and which value(s) mean "attack"), the run
+computes genuine accuracy, precision, recall, F1, and a full confusion
+matrix with `sklearn.metrics` against it. Name no label column and it
+reports "Not Applicable" again — never a made-up number either way.
+
+**Workflow, with one deliberate consolidation:** Upload → Preprocess
+(keeps numeric columns, drops rows with missing values, reports the
+attack/normal distribution and which non-numeric columns were dropped)
+→ Train & evaluate. The spec lists Train, Evaluate, and Save Model as
+separate buttons; here they're one step, because there is nothing
+meaningful for separate "Evaluate" and "Save" clicks to do beyond what
+training already does (the same choice Phase 6 made).
+
+**What was and wasn't verified — please read this part:**
+- The evaluation pipeline was verified on two **synthetic toy datasets I
+  generated** (200 rows -> 95% precision/recall; 100 rows -> a perfect
+  1.0 because the classes have essentially zero overlap). In both, the
+  confusion-matrix totals matched the true class counts exactly. **These
+  numbers demonstrate that the metric code is correct. They say nothing
+  about real-world detection quality** — a perfect score on a toy set
+  with no class overlap is expected and not impressive. For genuine
+  results, try a real labeled dataset such as NSL-KDD or CICIDS2017
+  (numeric feature columns plus a label column).
+- Both **CSV and Parquet** were exercised live. Parquet reads need
+  `pyarrow`, now in `requirements.txt`.
+- Upload, preprocess, and train were exercised through the Vite dev
+  proxy (including the multipart upload), not just direct-to-backend.
+
+**Four real bugs found and fixed during this phase:**
+1. **`model_version` collisions.** Versions were stamped with
+   second-level timestamps, so two training runs finishing in the same
+   second hit the unique constraint. Now microsecond-precision. This
+   was latent in Phase 6's `train.py` too, and is fixed there as well.
+2. **API silently omitted the new fields.** I added `source` and
+   `dataset_filename` to the ORM model but not to the `MLTrainingRunOut`
+   response schema, so the API never returned them. Caught by a
+   `KeyError` in verification; fixed in the schema and the TypeScript
+   type.
+3. **Path traversal on the read side.** Upload sanitized filenames, but
+   preprocess/train built paths from the request body unchecked, so
+   `../../elsewhere.csv` or an absolute path could read any CSV/Parquet
+   on the server. Now every filename is resolved and must sit directly
+   inside `data/raw/` or `data/processed/` (relative, absolute, and
+   subdirectory-hidden traversal all verified blocked).
+4. **Wrong data/model directory under Docker.** I located `data/` and
+   `ml/models/` with `Path(__file__).parents[3]`, which is the repo root
+   in a checkout but `/` inside the container (code lives at
+   `/app/app/...`). Uploads and trained models would have landed in the
+   container's own disposable filesystem instead of the `./data` and
+   `./ml` folders mounted from the host, so hand-placing files in
+   `data/raw/` wouldn't have worked in Docker. Phase 6's model directory
+   had the same flaw. Both now use `app/utils/paths.py::project_root()`
+   (a `PROJECT_ROOT` env var if set, otherwise the nearest ancestor
+   containing `data/`), and `docker-compose.yml` now mounts `./ml:/app/ml`
+   alongside `./data:/app/data`. Verified against a simulated Docker
+   directory layout, the env override, and the normal checkout layout —
+   **not** inside a real container, which I can't run here.
+
+A migration note: the new `source` column is `NOT NULL`, so the
+migration backfills existing rows with `event_stream` (which they
+genuinely all were) via a temporary `server_default`, then drops it.
+
+**API:** `GET /api/dataset/files`, `POST /api/dataset/upload`,
+`POST /api/dataset/preprocess`, `POST /api/dataset/train` (the last
+three ADMIN/SOC_ANALYST only, and all audit-logged like every other
+privileged action), `GET /api/dataset/runs`.
+
+### Training on real datasets from the command line (`scripts/train_model.py`)
+
+The Dataset page is fine for small files, but NSL-KDD, UNSW-NB15 and
+CICIDS2017 are big and awkward (CICIDS2017 is hundreds of MB per file),
+so there is also a command. It uses the same preprocessing and training
+code as the page, saves to the same table (runs appear in the page's
+*Training history*), and is audit-logged as user `cli`.
+
+**Where files go:** `data/raw/` in the project root, next to `backend/`
+and `frontend/`. The folder is git-ignored, so the datasets are never
+committed. Under Docker it is the same folder (mounted at `/app/data`).
+
+**One-time setup (PowerShell, from the project root).** The command runs
+on your machine, not in Docker, so point it at the database port Docker
+publishes (Docker must be running):
+
+```powershell
+pip install -r backend\requirements.txt
+$env:DATABASE_URL="postgresql+psycopg2://socuser:socpassword@localhost:5432/soc_db"
+```
+
+**NSL-KDD** (`KDDTrain+.txt` has no header row and dozens of attack
+names, so a prep script labels it and keeps attacks to ~8%):
+
+```powershell
+python scripts\prepare_nslkdd.py "C:\path\to\KDDTrain+.txt" data\raw\nslkdd_binary.csv
+python scripts\train_model.py nslkdd_binary.csv --label-column label --attack-values attack --contamination 0.08
+```
+
+**UNSW-NB15** (copy `UNSW_NB15_training-set.csv` into `data/raw/`; `label`
+is 0/1 and `id` is just a row number):
+
+```powershell
+python scripts\train_model.py UNSW_NB15_training-set.csv --label-column label --attack-values 1 --drop-columns id --attack-fraction 0.08 --contamination 0.08
+```
+
+**CICIDS2017** (copy ONE day's CSV, one that contains attacks; Monday is
+all benign. Tuesday has FTP/SSH brute force, roughly 3% of rows, so no
+attack subsampling is needed):
+
+```powershell
+python scripts\train_model.py Tuesday-WorkingHours.pcap_ISCX.csv --label-column Label --benign-values BENIGN --max-rows 200000 --contamination 0.03
+```
+
+`--benign-values` means "everything except these is an attack", which is
+what you want when a dataset has dozens of attack names. The tool strips
+the leading spaces in CICIDS2017's column names, drops rows containing
+`Infinity`/`NaN`, and tolerates the stray non-UTF-8 byte in its labels.
+
+**Read results honestly:**
+- Choosing `--contamination` to match the attack share you already know
+  uses the labels to help the model, which flatters the scores. Say so.
+- The model is evaluated on the same rows it was fitted on; there is no
+  held-out test split.
+- Isolation Forest is unsupervised; expect imperfect numbers on real data.
+
+**What was verified:** the command was run end to end against synthetic
+stand-ins reproducing each dataset's quirks (headerless NSL-KDD layout,
+UNSW's `id` and text columns, CICIDS-style leading-space headers,
+`Infinity`/`NaN` values, a stray invalid byte, many attack labels), and
+every saved confusion matrix was cross-checked against an independent
+recount of the data. **It has not been run on the real downloads.** If a
+mirror's columns differ, the error messages print the actual column names.
+
+Two further fixes made after the first Phase 14 delivery: the command
+crashed at its final summary (it read a database object after closing
+the session; found by running it), and a train request that named no label
+column for a file preprocessed *with* one returned a raw HTTP 500; it is
+now a clear 400.
+
+
+## Testing (Phase 15)
+
+One command runs everything: `./scripts/run_tests.sh` (backend, frontend, and a
+production build). Current result: **527 backend tests, 90 frontend tests, build
+green; 99% backend line coverage.**
+
+### Backend (pytest) — `backend/tests/`
+
+The suite runs against a **real PostgreSQL database**, not SQLite, because the
+human-readable ids (`EVT-…`, `INC-1001`, …) come from Postgres sequences. Create
+the throw-away test database once:
+
+```bash
+docker compose up -d postgres
+docker compose exec postgres psql -U socuser -d soc_db -c "CREATE DATABASE soc_test;"
+cd backend && pip install -r requirements.txt && pytest
+```
+
+Safety: the suite TRUNCATEs tables between tests, so `conftest.py` refuses to
+run unless the database name ends in `_test`. Training and dataset tests write
+to a temp directory, never to the real `data/` or `ml/models/`. Override the
+target with `TEST_DATABASE_URL`.
+
+| File | What it proves |
+|---|---|
+| `test_auth.py` | Login, JWT handling; forged / expired / `alg:none` / wrong-secret tokens rejected; a token's *claimed* role cannot escalate privileges (the DB role wins) |
+| `test_rbac.py` | A matrix over every route: anonymous → 401, viewer → 403 on every write route, admin/analyst pass the role check |
+| `test_detectors.py` | Each of the 5 rules: thresholds, windows, per-source isolation, debouncing, runtime configurability |
+| `test_correlation.py` | Grouping scores, window limits, severity escalation, the explanation trail, "every alert in exactly one incident" |
+| `test_risk_engine.py` | Five factors sum to ≤100, bounds hold for all inputs, deterministic, ML factor honest about missing models |
+| `test_mitre_mapping.py` | Rule → technique mapping, coverage view, configured confidence |
+| `test_response_center.py` | Recommendations, one-time decisions, and the **simulation-only guarantee** (approving "Disable Account" leaves the real user active) |
+| `test_audit.py` | Every privileged action is logged; the log has no write/delete API |
+| `test_ai_provider.py` | Mock provider output, and **every** kind of LLM failure (HTTP errors, bad JSON, wrong schema, timeouts) falls back to a valid investigation |
+| `test_ml.py` | Feature engineering, training honesty (no accuracy without labels), outlier ranked first, unique model versions |
+| `test_dataset.py` | Upload allow-list, path traversal, preprocessing, real metrics only with labels |
+| `test_simulator.py` | Scenario data uses only non-routable IPs / `.invalid` domains; the live runner streams over WebSocket |
+| `test_bootstrap.py` | Fresh install builds the whole schema; migrations and models can't drift apart; existing databases are adopted without touching data; demo-account seeding; unreachable-database handling |
+| `test_docs.py` | Every route is documented; every link in the README and docs resolves |
+| `test_e2e_pipeline.py` | The full SOC loop incl. a quiet network raising **zero** alerts, and a complete analyst workflow over HTTP |
+
+Scenario generators randomise users, hosts, IPs and byte volumes on every run,
+so tests assert *rules and invariants*, never fixed values.
+
+### Frontend (Vitest + Testing Library) — `frontend/src/**/*.test.tsx`
+
+API client (auth header, error mapping, 401 handling, query strings, uploads),
+auth context, route protection, login page, the Response Center and Audit Log
+pages, the approve/reject card, and routing. `npm test` runs them;
+`npm run build` type-checks the whole app including the tests.
+
+### Bugs found and fixed while testing and documenting
+
+* **Unvalidated training parameters (Phase 15).** `POST /api/ml/train` and `POST /api/dataset/train` accepted any
+  `contamination` / `window_minutes`. Out-of-range values crashed with unhandled 500s (`window_minutes=0` raised
+  `ZeroDivisionError`) and negative windows were silently recorded. Now a clean 422.
+* **No migrations existed (Phase 16).** `alembic/versions/` was empty, so `alembic upgrade head` created nothing and a
+  fresh `docker compose up` could not start. Added a baseline migration and a start-up bootstrap that also adopts existing databases.
+* **A dataset run displaced the live ML model (Phase 16).** The ML page, dashboard chart and risk engine all used "the
+  newest training run" of any kind, so training on an uploaded dataset (which has no per-IP predictions) blanked all three.
+  They now use the newest *event-stream* run.
+* **The ML factor never reached existing incidents (Phase 16).** Risk was scored once, when an incident formed, so a model
+  trained afterwards never affected it. Training now re-scores existing incidents.
+* **ML training was not audited (Phase 16).** Now recorded like every other privileged action.
+* **Misleading UI text (Phase 16).** Sidebar pages said "Risk Engine ... lands in Phase 8" and the investigation tab said
+  "isn't built yet" for features that were built. These are now real pages or accurate messages, and a test prevents regressions.
+
+### Known limitations (documented, not hidden)
+
+* `/ws/events` is intentionally unauthenticated (see `app/api/ws.py`).
+* Denied (403) attempts are not written to the audit log — only successful
+  privileged actions are.
+* The real-LLM provider is tested against a stub server, not a live model.
 

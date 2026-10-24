@@ -15,7 +15,10 @@ import ResponseCenter from "@/pages/ResponseCenter";
 import AuditLogs from "@/pages/AuditLogs";
 import Dataset from "@/pages/Dataset";
 import Demo from "@/pages/Demo";
-import ComingSoon from "@/pages/ComingSoon";
+import RiskEngine from "@/pages/RiskEngine";
+import AiAnalyst from "@/pages/AiAnalyst";
+import ThreatIntel from "@/pages/ThreatIntel";
+import SystemHealth from "@/pages/SystemHealth";
 
 export default function App() {
   return (
@@ -33,47 +36,15 @@ export default function App() {
               <Route path="/alerts" element={<Alerts />} />
               <Route path="/incidents" element={<Incidents />} />
               <Route path="/incidents/:incidentId" element={<IncidentDetail />} />
-              <Route
-                path="/risk"
-                element={
-                  <ComingSoon
-                    title="Risk Engine"
-                    phaseNote="the explainable risk score lands in Phase 8"
-                  />
-                }
-              />
-              <Route
-                path="/ai-analyst"
-                element={
-                  <ComingSoon
-                    title="AI SOC Analyst"
-                    phaseNote="the AI investigation flow lands in Phase 10"
-                  />
-                }
-              />
+              <Route path="/risk" element={<RiskEngine />} />
+              <Route path="/ai-analyst" element={<AiAnalyst />} />
               <Route path="/mitre" element={<MitreAttack />} />
-              <Route
-                path="/threat-intel"
-                element={
-                  <ComingSoon
-                    title="Threat Intelligence"
-                    phaseNote="the mock threat-intel provider lands in a later phase"
-                  />
-                }
-              />
+              <Route path="/threat-intel" element={<ThreatIntel />} />
               <Route path="/response" element={<ResponseCenter />} />
               <Route path="/audit" element={<AuditLogs />} />
               <Route path="/dataset" element={<Dataset />} />
               <Route path="/demo" element={<Demo />} />
-              <Route
-                path="/system-health"
-                element={
-                  <ComingSoon
-                    title="System Health"
-                    phaseNote="it lands in a later phase"
-                  />
-                }
-              />
+              <Route path="/system-health" element={<SystemHealth />} />
             </Route>
           </Route>
         </Routes>

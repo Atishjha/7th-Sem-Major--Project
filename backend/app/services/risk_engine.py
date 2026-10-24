@@ -28,7 +28,7 @@ from app.models.common import Severity
 from app.models.detection_rule import DetectionRule
 from app.models.incident import Incident
 from app.models.ml_prediction import MLPrediction
-from app.models.ml_training_run import MLTrainingRun
+from app.models.ml_training_run import EVENT_STREAM_SOURCE, MLTrainingRun
 
 DEFAULT_ASSETS = [
     {"hostname": "WIN-SRV-DB01", "criticality": Severity.CRITICAL, "description": "Primary database server"},
@@ -83,7 +83,10 @@ def _detection_confidence(db: Session, rule_keys: list[str]) -> tuple[str, str |
 
 def _ml_anomaly_factor(db: Session, incident: Incident) -> tuple[int, dict]:
     latest_run_id = db.scalar(
-        select(MLTrainingRun.id).order_by(MLTrainingRun.trained_at.desc()).limit(1)
+        select(MLTrainingRun.id)
+        .where(MLTrainingRun.source == EVENT_STREAM_SOURCE)
+        .order_by(MLTrainingRun.trained_at.desc())
+        .limit(1)
     )
     if latest_run_id is None:
         return 0, {"available": False, "reason": "no ML model trained yet"}
