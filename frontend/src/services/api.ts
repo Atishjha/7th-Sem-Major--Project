@@ -67,6 +67,17 @@ export interface HealthResponse {
 
 export const getHealth = () => request<HealthResponse>("/health");
 
+export interface AiStatus {
+  mode: "mock" | "live";
+  provider: string;
+  model: string | null;
+  key_configured: boolean;
+  label: string;
+  note: string | null;
+}
+
+export const getAiStatus = () => request<AiStatus>("/ai/status");
+
 export const login = (username: string, password: string) =>
   request<LoginResponse>("/auth/login", {
     method: "POST",

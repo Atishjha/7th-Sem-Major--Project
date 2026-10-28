@@ -2,14 +2,18 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Panel } from "@/components/ui/panel";
 import { SeverityBadge } from "@/components/SeverityBadge";
-import { getIncidents } from "@/services/api";
+import { getAiStatus, getIncidents } from "@/services/api";
+import type { AiStatus } from "@/services/api";
+import { Badge } from "@/components/ui/badge";
 import type { Incident } from "@/types/incident";
 
 export default function AiAnalyst() {
   const [incidents, setIncidents] = useState<Incident[]>([]);
   const [loading, setLoading] = useState(true);
+  const [ai, setAi] = useState<AiStatus | null>(null);
 
   useEffect(() => {
+    getAiStatus().then(setAi).catch(() => setAi(null));
     getIncidents({ limit: 100 })
       .then(setIncidents)
       .finally(() => setLoading(false));
@@ -24,6 +28,16 @@ export default function AiAnalyst() {
           incident&apos;s real alerts, events, risk breakdown and MITRE mapping.
         </p>
       </div>
+
+      {ai && (
+        <Panel title="Who answers right now">
+          <div className="px-4 py-3 flex flex-wrap items-center gap-3 text-xs font-mono">
+            <Badge tone={ai.mode === "live" ? "signal" : "neutral"}>{ai.mode === "live" ? "live model" : "offline mock"}</Badge>
+            <span className="text-slate-200">{ai.label}</span>
+            {ai.note && <span className="text-muted">{ai.note}</span>}
+          </div>
+        </Panel>
+      )}
 
       <Panel title="How it works">
         <ul className="space-y-1.5 text-xs text-muted list-disc pl-4">

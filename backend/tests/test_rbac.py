@@ -22,7 +22,7 @@ READ_ROUTES = [
     "/api/incidents/INC-9999/investigation", "/api/incidents/INC-9999/response",
     "/api/assets", "/api/mitre/techniques", "/api/audit", "/api/response",
     "/api/ml/status", "/api/ml/predictions", "/api/dataset/files", "/api/dataset/runs",
-    "/api/simulator/status", "/api/auth/me",
+    "/api/simulator/status", "/api/auth/me", "/api/ai/status",
 ]
 
 # (method, path, json body) — bodies are deliberately invalid/unknown

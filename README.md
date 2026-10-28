@@ -14,7 +14,7 @@ analyst, calculates risk, and recommends safe response actions.
 
 ## Status
 
-All 16 phases are complete.
+All 17 phases are complete.
 
 - [x] Phase 1 — Project setup
 - [x] Phase 2 — Database + authentication
@@ -31,7 +31,8 @@ All 16 phases are complete.
 - [x] Phase 13 — Audit logs
 - [x] Phase 14 — Dataset / ML training page
 - [x] Phase 15 — Testing
-- [x] Phase 16 — Docker + documentation polish (this phase)
+- [x] Phase 16 — Docker + documentation polish
+- [x] Phase 17 — Real AI model connection (this phase)
 
 ## What it does
 
@@ -83,6 +84,21 @@ docker compose exec backend python scripts/seed_demo_data.py
 
 Stop with `docker compose down`. Add `-v` only if you want to **delete the database** and start from scratch.
 
+## Use a real AI model (optional)
+
+The AI SOC analyst works offline out of the box. To have a real language model write the investigations, put a provider
+and key in `.env` (for example `AI_PROVIDER=groq`, `AI_API_KEY=gsk_...`), recreate the backend
+(`docker compose up -d --force-recreate backend`) and check it:
+
+```bash
+docker compose exec backend python scripts/check_ai.py
+```
+
+The **System Health** page then shows **live model**. A real model's reply is checked before use (its MITRE table is
+replaced by the project's own mapping, and invented IP addresses or technique ids are removed), and any failure falls back
+to the offline analyst, with the report saying so. Full steps, other providers and troubleshooting:
+[docs/ai-analyst.md](docs/ai-analyst.md).
+
 ## Run without Docker
 
 You still need PostgreSQL (`docker compose up -d postgres` is the easy way).
@@ -120,7 +136,7 @@ npm run dev
 | Audit Logs | who did what, when; append-only |
 | Dataset & ML | upload, preprocess and train on public datasets with real metrics |
 | Demo Mode | start the five attack scenarios |
-| System Health | backend, ML model and simulator status |
+| System Health | backend, ML model, AI analyst (live or offline) and simulator status |
 
 ## Documentation
 
@@ -832,7 +848,7 @@ now a clear 400.
 ## Testing (Phase 15)
 
 One command runs everything: `./scripts/run_tests.sh` (backend, frontend, and a
-production build). Current result: **527 backend tests, 90 frontend tests, build
+production build). Current result: **567 backend tests, 94 frontend tests, build
 green; 99% backend line coverage.**
 
 ### Backend (pytest) — `backend/tests/`
@@ -862,7 +878,8 @@ target with `TEST_DATABASE_URL`.
 | `test_mitre_mapping.py` | Rule → technique mapping, coverage view, configured confidence |
 | `test_response_center.py` | Recommendations, one-time decisions, and the **simulation-only guarantee** (approving "Disable Account" leaves the real user active) |
 | `test_audit.py` | Every privileged action is logged; the log has no write/delete API |
-| `test_ai_provider.py` | Mock provider output, and **every** kind of LLM failure (HTTP errors, bad JSON, wrong schema, timeouts) falls back to a valid investigation |
+| `test_ai_provider.py` | Mock provider output; **every** kind of LLM failure (HTTP errors, bad JSON, timeouts) falls back to a valid investigation; real-model robustness: tolerant parsing, the grounding guard, MITRE not taken from the model, rate-limit retry, the API key never leaking, the AI status endpoint |
+| `test_check_ai.py` | The `scripts/check_ai.py` connection check: success, every kind of failure with a plain-language hint, and the key never printed |
 | `test_ml.py` | Feature engineering, training honesty (no accuracy without labels), outlier ranked first, unique model versions |
 | `test_dataset.py` | Upload allow-list, path traversal, preprocessing, real metrics only with labels |
 | `test_simulator.py` | Scenario data uses only non-routable IPs / `.invalid` domains; the live runner streams over WebSocket |
@@ -893,6 +910,10 @@ pages, the approve/reject card, and routing. `npm test` runs them;
 * **The ML factor never reached existing incidents (Phase 16).** Risk was scored once, when an incident formed, so a model
   trained afterwards never affected it. Training now re-scores existing incidents.
 * **ML training was not audited (Phase 16).** Now recorded like every other privileged action.
+* **Real-model path was fragile (Phase 17).** It sent a Groq model name to every provider, rejected any reply that wasn't
+  perfectly shaped (code fences, a string instead of a list, `null`), trusted the model's MITRE table and anything it
+  claimed, and gave no way to see why a call failed. It now has a per-provider model default, tolerant parsing, a grounding
+  guard, a rate-limit retry, a diagnosable log (key masked), a status endpoint and a `check_ai.py` connection check.
 * **Misleading UI text (Phase 16).** Sidebar pages said "Risk Engine ... lands in Phase 8" and the investigation tab said
   "isn't built yet" for features that were built. These are now real pages or accurate messages, and a test prevents regressions.
 
@@ -901,5 +922,7 @@ pages, the approve/reject card, and routing. `npm test` runs them;
 * `/ws/events` is intentionally unauthenticated (see `app/api/ws.py`).
 * Denied (403) attempts are not written to the audit log — only successful
   privileged actions are.
-* The real-LLM provider is tested against a stub server, not a live model.
+* The real-LLM provider is tested against stub servers (including a real-HTTP one that misbehaves on purpose), not a live
+  model in the build environment; run `scripts/check_ai.py` to verify your own key and model. The grounding guard checks
+  IP addresses and technique ids, not usernames, hostnames or counts.
 

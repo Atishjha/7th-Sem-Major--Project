@@ -62,6 +62,7 @@ DESCRIPTIONS = {
     ("GET", "/api/incidents/{incident_id}/investigation"): "The latest stored investigation, or `null` if none has been run.",
     ("GET", "/api/incidents/{incident_id}/mitre"): "MITRE ATT&CK techniques that apply to this incident, with the rule that evidences each.",
     ("GET", "/api/incidents/{incident_id}/response"): "Recommended response actions for the incident; created on first request, never duplicated.",
+    ("GET", "/api/ai/status"): "Which AI analyst will answer: offline mock or a live model, the model name, and whether a key is set (never the key itself).",
     ("GET", "/api/assets"): "Registered assets and their criticality (used by the risk engine).",
     ("GET", "/api/mitre/techniques"): "Coverage view: every mapped technique and how much real alert evidence exists for it.",
     ("GET", "/api/response"): "The global response queue. Filter: `status_filter` (recommended, simulated_success, rejected).",

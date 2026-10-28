@@ -47,11 +47,18 @@ All four alerts were grouped into **one incident**. Open it and walk the tabs:
 * **Entities:** users, IPs, hosts, destinations involved.
 * **MITRE ATT&CK:** techniques T1110, T1078, T1059.001 and T1041 mapped from the rules that fired.
 
-## 5. AI investigation (1 min): *AI Investigation* tab
+## 5. AI investigation (1-2 min): *AI Investigation* tab
 
 Click **Run AI investigation**. Point out that the report separates **observed evidence** from **inference** and lists
-**unknown information**. *Say:* "It works offline by default. If a real LLM is configured and fails, the built-in analyst
-answers and the report labels itself `mock (llm_failed: ...)`, so it never silently pretends."
+**unknown information**, and read the `generated_by` label.
+
+* **With a real model configured** (see [ai-analyst.md](ai-analyst.md)): first show **System Health** or **AI SOC Analyst**,
+  where the AI card says **live model** and the model name. The report is labelled `llm:groq:<model>`.
+  *Say:* "This is a real language model, but I don't trust it blindly. Its MITRE table comes from my own rule mapping, and
+  a grounding check removes any IP address or technique it invents that isn't in the incident data."
+* **Without a key:** it works offline. *Say:* "By default an offline analyst answers, so the demo needs no internet."
+* **Safety net:** if the model is unreachable the label reads `mock (llm_failed: ...)` and the demo carries on. *Say:*
+  "It never silently pretends: the report says which analyst wrote it."
 
 ## 6. Response (1 min): *Response* tab, then *Response Center*
 
@@ -93,8 +100,10 @@ Backend, ML model and simulator status, refreshed every 10 seconds.
 
 ## Questions you may be asked, and honest answers
 
-**Is the AI real?** By default it is a deterministic offline analyst built from the incident's real data, so the demo
-needs no key. A real LLM can be enabled through configuration; the system falls back to the offline analyst if it fails.
+**Is the AI real?** Yes when configured: a real language model (for example Llama 3.3 70B via Groq) writes the report from
+the incident's real data. By default an offline analyst answers so the demo needs no key. Either way the report names who wrote
+it, a real model's output is checked (MITRE comes from my mapping; invented IPs and technique ids are stripped), and if the
+model fails the offline analyst answers instead.
 
 **Is the data real?** No. Everything is synthetic, uses non-routable addresses and `.invalid` domains, and tests enforce that.
 

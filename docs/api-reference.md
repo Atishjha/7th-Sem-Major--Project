@@ -7,7 +7,7 @@ All routes live under `/api` and need `Authorization: Bearer <token>` (get one f
 unless marked **public**. Roles: **ADMIN**, **SOC_ANALYST** (may change state) and **VIEWER** (read-only).
 Access levels below were measured by calling each route as an anonymous user and as a viewer.
 
-**33 HTTP routes + 1 WebSocket.**
+**34 HTTP routes + 1 WebSocket.**
 
 ## system
 
@@ -115,6 +115,12 @@ Access levels below were measured by calling each route as an anonymous user and
 | `POST` | `/api/dataset/preprocess` | ADMIN, SOC_ANALYST | Clean a raw file into a numeric feature table (optionally keeping a label column). |
 | `POST` | `/api/dataset/train` | ADMIN, SOC_ANALYST | Train on a processed file. Accuracy metrics are computed only if labels are declared. |
 | `GET` | `/api/dataset/runs` | any signed-in role | Training runs that came from uploaded datasets. |
+
+## ai
+
+| Method | Path | Access | Description |
+|---|---|---|---|
+| `GET` | `/api/ai/status` | any signed-in role | Which AI analyst will answer: offline mock or a live model, the model name, and whether a key is set (never the key itself). |
 
 ## other
 

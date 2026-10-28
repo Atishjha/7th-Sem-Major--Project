@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
 import { Panel } from "@/components/ui/panel";
 import { Badge } from "@/components/ui/badge";
-import { getHealth, getMlStatus, getSimulatorStatus } from "@/services/api";
-import type { HealthResponse } from "@/services/api";
+import { getAiStatus, getHealth, getMlStatus, getSimulatorStatus } from "@/services/api";
+import type { AiStatus, HealthResponse } from "@/services/api";
 import type { MLStatus } from "@/types/ml";
 import type { SimulatorStatus } from "@/types/event";
 
@@ -21,15 +21,17 @@ export default function SystemHealth() {
   const [health, setHealth] = useState<HealthResponse | null>(null);
   const [ml, setMl] = useState<MLStatus | null>(null);
   const [sim, setSim] = useState<SimulatorStatus | null>(null);
+  const [ai, setAi] = useState<AiStatus | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [checkedAt, setCheckedAt] = useState<Date | null>(null);
 
   const refresh = useCallback(async () => {
     try {
-      const [h, m, s] = await Promise.all([getHealth(), getMlStatus(), getSimulatorStatus()]);
+      const [h, m, s, a] = await Promise.all([getHealth(), getMlStatus(), getSimulatorStatus(), getAiStatus()]);
       setHealth(h);
       setMl(m);
       setSim(s);
+      setAi(a);
       setError(null);
     } catch (e) {
       setHealth(null);
@@ -72,7 +74,7 @@ export default function SystemHealth() {
         </Panel>
       )}
 
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Panel title="Backend API">
           <div className="px-4 py-2">
             <Row label="Status">
@@ -102,6 +104,18 @@ export default function SystemHealth() {
                   : "not applicable (no labels)"
                 : "—"}
             </Row>
+          </div>
+        </Panel>
+
+        <Panel title="AI analyst">
+          <div className="px-4 py-2">
+            <Row label="Answering">
+              {ai ? <Badge tone={ai.mode === "live" ? "signal" : "neutral"}>{ai.mode === "live" ? "live model" : "offline mock"}</Badge> : "—"}
+            </Row>
+            <Row label="Provider">{ai?.provider ?? "—"}</Row>
+            <Row label="Model">{ai?.model ?? "—"}</Row>
+            <Row label="API key">{ai ? (ai.key_configured ? "set" : "not set") : "—"}</Row>
+            {ai?.note && <p className="pt-2 text-xs text-muted">{ai.note}</p>}
           </div>
         </Panel>
 

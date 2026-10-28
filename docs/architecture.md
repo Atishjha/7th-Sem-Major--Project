@@ -128,7 +128,7 @@ The schema is created by Alembic migration `0001` (see `backend/alembic/versions
   used outside a development environment.
 * The Threat Intelligence page is intentionally a statement of non-scope: no external feeds are queried.
 * The frontend container runs the Vite *development* server (hot reload), which is right for a demo but not for production.
-* The real-LLM path is tested against a stub server, not a live model.
+* The real-LLM path is tested against a stub server in the automated suite; `scripts/check_ai.py` verifies it against a real endpoint on your machine. The grounding guard checks IP addresses and technique ids, not usernames, hostnames or counts.
 
 ## Repository layout
 

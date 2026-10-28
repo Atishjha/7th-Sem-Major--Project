@@ -61,6 +61,28 @@ python scripts/train_model.py nslkdd_binary.csv --label-column label --attack-va
 Under Docker the `scripts/` folder is mounted into the backend container, so this also works:
 `docker compose exec backend python scripts/seed_demo_data.py`.
 
+## The report says `mock (llm_failed: ...)`
+
+You configured a real model but it failed, so the offline analyst answered (by design). Find out why:
+
+```bash
+docker compose exec backend python scripts/check_ai.py     # locally: python scripts/check_ai.py
+docker compose logs backend | grep "LLM provider failed"    # the full reason, with the key masked
+```
+
+| Label says | Usual cause and fix |
+|---|---|
+| `HTTPStatusError` with 401 | wrong or revoked key. Re-copy it into `AI_API_KEY` with no quotes or spaces. |
+| `HTTPStatusError` with 404 | the model name is unknown to that provider, or `AI_BASE_URL` is wrong. |
+| `HTTPStatusError` with 400 | the model does not support JSON mode, or the name is wrong. Try another model. |
+| `HTTPStatusError` with 429 | rate limit (free tiers are strict). Wait a minute, or use a smaller model. |
+| `ConnectError` / `ConnectTimeout` | no route to the provider: internet, VPN or proxy, or a wrong `AI_BASE_URL`. |
+| `ValueError` / `JSONDecodeError` | the model answered but not with a usable report. Use a larger, instruction-tuned model. |
+| `RuntimeError` | settings incomplete: `AI_MODEL` (openrouter, openai_compatible) or `AI_BASE_URL` (openai_compatible) missing. |
+
+After editing `.env`, recreate the container so it is re-read: `docker compose up -d --force-recreate backend`.
+The **System Health** page shows whether the app currently considers the AI **live** or **offline**, and why.
+
 ## ML training says "need at least 5 ..."
 
 There aren't enough events to form 5 time windows. Every scenario comes from one IP, so running scenarios alone isn't
